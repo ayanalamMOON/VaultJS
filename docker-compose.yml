@@ -1,2 +1,21 @@
-version: '3.9'
-services: {}
+version: '3.8'
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+  auth-server:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && node packages/auth-server/src/server.js"
+    environment:
+      - PORT=3001
+      - REDIS_URL=redis://redis:6379
+      - MASTER_SECRET=dev_master_secret_change_me
+      - HMAC_KEY=dev_hmac_key_change_me
+    ports:
+      - "3001:3001"
+    depends_on:
+      - redis
