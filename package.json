@@ -1,0 +1,14 @@
+{
+  "name": "vault-js",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "echo \"No tests configured yet\"",
+    "build": "echo \"No build configured yet\"",
+    "lint": "echo \"No lint configured yet\""
+  }
+}
