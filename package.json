@@ -2,13 +2,29 @@
   "name": "vault-js",
   "version": "0.1.0",
   "private": true,
+  "type": "commonjs",
   "workspaces": [
     "packages/*",
     "apps/*"
   ],
   "scripts": {
-    "test": "echo \"No tests configured yet\"",
-    "build": "echo \"No build configured yet\"",
-    "lint": "echo \"No lint configured yet\""
+    "test": "jest --runInBand",
+    "build": "node scripts/benchmark.js --smoke",
+    "lint": "node -e \"console.log('lint: no-op')\"",
+    "start:auth": "node packages/auth-server/src/server.js",
+    "start:gateway": "node apps/api-gateway/server.js",
+    "start:demo": "node apps/demo-app/server.js"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "express": "^4.21.2",
+    "ioredis": "^5.6.1"
+  },
+  "optionalDependencies": {
+    "argon2": "^0.41.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.1.1"
   }
 }

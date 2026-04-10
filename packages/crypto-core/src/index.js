@@ -1,10 +1,10 @@
 'use strict';
 
 module.exports = {
-  kdf: require('./kdf'),
-  envelope: require('./envelope'),
-  epochKey: require('./epoch-key'),
-  fingerprint: require('./fingerprint'),
-  rotation: require('./rotation'),
-  constants: require('./constants')
+  ...require('./constants'),
+  ...require('./kdf'),
+  ...require('./envelope'),
+  ...require('./epoch-key'),
+  ...require('./fingerprint'),
+  ...require('./rotation')
 };
