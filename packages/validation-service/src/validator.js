@@ -5,19 +5,31 @@ const { verifyContext, verifyContextSummary } = require('./context-verifier');
 const { decideValidation } = require('./decision-engine');
 const { auditValidation } = require('./audit-logger');
 
-let wasmEngine = null;
-try {
-  const fs = require('fs');
-  const path = require('path');
-  const wasmPath = path.join(__dirname, ' validation-engine.wasm');
-  if (fs.existsSync(wasmPath)) {
-    const wasmBuffer = fs.readFileSync(wasmPath);
-    const wasmModule = new WebAssembly.Module(wasmBuffer);
-    wasmEngine = new WebAssembly.Instance(wasmModule, {}).exports;
-  }
-} catch (e) {
-  // Silently fallback to pure NodeJS crypto algorithms
-  wasmEngine = null;
+let _wasmEnginePromise = null;
+
+async function getWasmEngine() {
+  if (_wasmEnginePromise) return _wasmEnginePromise;
+
+  _wasmEnginePromise = (async () => {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const wasmPath = path.join(__dirname, 'validation-engine.wasm');
+      
+      // Async stat check
+      await fs.promises.access(wasmPath, fs.constants.R_OK);
+      
+      const wasmBuffer = await fs.promises.readFile(wasmPath);
+      // For Node < 16 WebAssembly.instantiate is preferred over new Module
+      const { instance } = await WebAssembly.instantiate(wasmBuffer, {});
+      return instance.exports;
+    } catch (e) {
+      // Silently fallback to pure NodeJS crypto algorithms
+      return null;
+    }
+  })();
+
+  return _wasmEnginePromise;
 }
 
 /**
@@ -52,7 +64,8 @@ async function runValidation({ token, requestContext, masterSecret, hmacKey, red
   // is rejected. We catch the error to produce a structured denial.
   try {
     // Route to WASM if available, else fallback to JS
-    if (wasmEngine && wasmEngine.validateToken) {
+    const wasmEngine = await getWasmEngine();
+    if (wasmEngine && typeof wasmEngine.validateToken === 'function') {
       // Stub for future Rust WASM payload interop
       // validated = wasmEngine.validateToken({ token, context: requestContext, masterSecret, hmacKey });
     }

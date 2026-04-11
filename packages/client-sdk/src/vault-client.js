@@ -81,14 +81,16 @@ class VaultClient {
    * Internal POST helper.
    * @param {string} path
    * @param {object} body
+   * @param {object} [opts] Options for fetch
    * @returns {Promise<Response>}
    */
-  async _post(path, body) {
+  async _post(path, body, opts = {}) {
     return this.fetch(`${this.baseUrl}${path}`, {
       method: 'POST',
       credentials: 'include',
       headers: this._headers(),
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal: opts.signal
     });
   }
 
@@ -184,66 +186,82 @@ class VaultClient {
 
   /**
    * Register a new hardware passkey.
+   * Robust flow handles signals for graceful cancellation and complex error wrapping.
    *
    * @param {string} username
+   * @param {object} [opts]
+   * @param {AbortSignal} [opts.signal]
    * @returns {Promise<void>}
    */
-  async registerWithPasskey(username) {
+  async registerWithPasskey(username, { signal } = {}) {
     if (!username) throw new Error('username is required');
 
-    // 1. Get challenge from server
-    const challengeRes = await this._post('/auth/webauthn/register-challenge', { username });
-    if (!challengeRes.ok) throw new Error('failed to get passkey challenge');
-    const options = await challengeRes.json();
+    try {
+      // 1. Get challenge from server
+      const challengeRes = await this._post('/auth/webauthn/register-challenge', { username }, { signal });
+      if (!challengeRes.ok) throw new Error('Failed to get passkey challenge from server');
+      const options = await challengeRes.json();
 
-    // 2. Prompt user hardware
-    const credential = await registerPasskey(options);
+      // 2. Prompt user hardware safely
+      const credential = await registerPasskey(options, signal);
 
-    // 3. Send attestation
-    const verifyRes = await this._post('/auth/webauthn/register-verify', { username, credential });
-    if (!verifyRes.ok) throw new Error('passkey registration failed');
-    
-    // Auto login
-    this._webauthnCredentialId = credential.id;
-    this._authenticated = true;
-    
-    if (!this._stopRefresh) {
-      this._stopRefresh = startSilentRefresh(
-        (path, init) => this.fetch(`${this.baseUrl}${path}`, { ...init, headers: this._headers() }),
-        this.refreshOpts
-      );
+      // 3. Send physical attestation
+      const verifyRes = await this._post('/auth/webauthn/register-verify', { username, credential }, { signal });
+      if (!verifyRes.ok) throw new Error('Passkey registration validation failed at server layer');
+      
+      // Auto login
+      this._webauthnCredentialId = credential.id;
+      this._authenticated = true;
+      
+      if (!this._stopRefresh) {
+        this._stopRefresh = startSilentRefresh(
+          (path, init) => this.fetch(`${this.baseUrl}${path}`, { ...init, headers: this._headers() }),
+          this.refreshOpts
+        );
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') throw err;
+      throw new Error(`VaultJS Passkey Registration Failed: ${err.message}`);
     }
   }
 
   /**
    * Authenticate via hardware passkey.
+   * Robust flow handles signals for graceful cancellation and complex error wrapping.
    *
    * @param {string} username
+   * @param {object} [opts]
+   * @param {AbortSignal} [opts.signal]
    * @returns {Promise<void>}
    */
-  async loginWithPasskey(username) {
+  async loginWithPasskey(username, { signal } = {}) {
     if (!username) throw new Error('username is required');
 
-    // 1. Get challenge from server
-    const challengeRes = await this._post('/auth/webauthn/login-challenge', { username });
-    if (!challengeRes.ok) throw new Error('failed to get passkey challenge');
-    const options = await challengeRes.json();
+    try {
+      // 1. Get challenge from server
+      const challengeRes = await this._post('/auth/webauthn/login-challenge', { username }, { signal });
+      if (!challengeRes.ok) throw new Error('Failed to fetch passkey challenge');
+      const options = await challengeRes.json();
 
-    // 2. Prompt user hardware
-    const assertion = await loginWithPasskey(options);
+      // 2. Prompt user hardware safely
+      const assertion = await loginWithPasskey(options, signal);
 
-    // 3. Send physical assertion
-    const verifyRes = await this._post('/auth/webauthn/login-verify', { username, assertion });
-    if (!verifyRes.ok) throw new Error('passkey login failed');
+      // 3. Send physical assertion
+      const verifyRes = await this._post('/auth/webauthn/login-verify', { username, assertion }, { signal });
+      if (!verifyRes.ok) throw new Error('Passkey login assertion rejected by server');
 
-    this._webauthnCredentialId = assertion.id;
-    this._authenticated = true;
+      this._webauthnCredentialId = assertion.id;
+      this._authenticated = true;
 
-    if (!this._stopRefresh) {
-      this._stopRefresh = startSilentRefresh(
-        (path, init) => this.fetch(`${this.baseUrl}${path}`, { ...init, headers: this._headers() }),
-        this.refreshOpts
-      );
+      if (!this._stopRefresh) {
+        this._stopRefresh = startSilentRefresh(
+          (path, init) => this.fetch(`${this.baseUrl}${path}`, { ...init, headers: this._headers() }),
+          this.refreshOpts
+        );
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') throw err;
+      throw new Error(`VaultJS Passkey Login Failed: ${err.message}`);
     }
   }
 

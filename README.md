@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🛡️ VaultJS
+# VaultJS
 ### The Next-Generation 4D Web Security Architecture
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
@@ -22,22 +22,22 @@
 
 <br/>
 
-## 🌌 The Core Concept: The "4D" Cryptographic Landscape
+## The Core Concept: The "4D" Cryptographic Landscape
 
 Web security traditionally relies on 1D or 2D security (token entropy + HTTPS). These paradigms assume the environment is safe. **VaultJS assumes the environment is actively compromised.** We introduce a genuinely novel design space that maps four distinct dimensions to concrete, resilient cryptographic primitives to actively defend session state.
 
 | Dimension | Metaphor | Defense Mechanism | Cryptographic Implementation |
 | :---: | :--- | :--- | :--- |
-| **📏 Length** | **Key Entropy / Spatial Hardening** | Brute-force & Cracking mitigation | **256-bit+** token entropy.<br>Client-side `PBKDF2` + Server-side `Argon2id` (Compound KDF) |
-| **📐 Width** | **Context Environmental Binding** | Session Hijacking & Theft mitigation | **Multi-factor environmental fingerprint** bridging `userAgent`, OS constraints, IP ranges, & native `WebGL` renderers. |
-| **📦 Depth** | **Layered Cryptographic Obfuscation** | Tamper detection & Reverse-engineering mitigation | **3-Tier Nested Encryption Envelope** (Inspired by DRM shielding layers like Denuvo's VM obfuscation). |
-| **⏱️ Time** | **Temporal Validity & Decay** | Replay attacks & Token permanence mitigation | **Epoch-locked key derivation** (`HKDF` with 5-min intervals) combined with silent, background background refreshes. |
+| **Length** | **Key Entropy / Spatial Hardening** | Brute-force & Cracking mitigation | **256-bit+** token entropy.<br>Client-side `PBKDF2` + Server-side `Argon2id` (Compound KDF) |
+| **Width** | **Context Environmental Binding** | Session Hijacking & Theft mitigation | **Multi-factor environmental fingerprint** bridging `userAgent`, OS constraints, IP ranges, & native `WebGL` renderers. |
+| **Depth** | **Layered Cryptographic Obfuscation** | Tamper detection & Reverse-engineering mitigation | **3-Tier Nested Encryption Envelope** (Inspired by DRM shielding layers like Denuvo's VM obfuscation). |
+| **Time** | **Temporal Validity & Decay** | Replay attacks & Token permanence mitigation | **Epoch-locked key derivation** (`HKDF` with 5-min intervals) combined with silent, background background refreshes. |
 
 ---
 
-## 🏗️ Architecture Deep Dive
+## Architecture Deep Dive
 
-### Dimension 1: 📏 `Length` — Dual-Layer Password Protection
+### Dimension 1: `Length` — Dual-Layer Password Protection
 Traditional systems only hash passwords on the backend. VaultJS introduces asymmetric load balancing between the client and server to stop cracking dead in its tracks.
 
 <details>
@@ -62,7 +62,7 @@ The server intercepts the pre-hash and applies a tuned, memory-hard KDF.
 ```python
 final_hash = Argon2id(input=clientPreHash, salt=cryptoRandom(32), memory=96MB, time=3, threads=4)
 ```
-> 💡 **Why it matters**: Attacker GPU farms that crack standard `bcrypt` in hours would take months to conquer the compound complexity of `PBKDF2` (150k limit) + `Argon2id` (96MB limit).
+> **Why it matters**: Attacker GPU farms that crack standard `bcrypt` in hours would take months to conquer the compound complexity of `PBKDF2` (150k limit) + `Argon2id` (96MB limit).
 </details>
 
 <details>
@@ -73,7 +73,7 @@ After $N$ login failures, VaultJS activates an invisible PoW challenge. The clie
 
 <br>
 
-### Dimensions 2, 3 & 4: 📦 `Depth` 📐 `Width` ⏱️ `Time` — The Vault Token
+### Dimensions 2, 3 & 4: `Depth` `Width` `Time` — The Vault Token
 
 Instead of relying on fragile JSON Web Tokens (JWTs), VaultJS deploys a highly obfuscated nested envelope structure, locking the data dimensionally.
 
@@ -107,7 +107,7 @@ Tokens are cryptographically dead outside their epoch. The VaultJS Client SDK si
 
 ---
 
-## 🛡️ Denuvo-Inspired Zero-Trust Validation Service
+## Denuvo-Inspired Zero-Trust Validation Service
 
 Taking cues from the gaming industry's DRM architectures, validation logic is fundamentally separated from the business application layer.
 
@@ -122,7 +122,7 @@ The validation gateway executes a strict, atomic pipeline:
 
 ---
 
-## 🔄 Full System Flow
+## Full System Flow
 
 ```mermaid
 sequenceDiagram
@@ -166,7 +166,7 @@ sequenceDiagram
 
 ---
 
-## ⚡ Performance Impact Analysis
+## Performance Impact Analysis
 
 Because VaultJS relies exclusively on low-level, highly optimized C/C++ backed cryptographic primitives embedded inside Node's crypto library, the security overhead inside the request lifecycle is near non-existent.
 
@@ -183,7 +183,7 @@ Because VaultJS relies exclusively on low-level, highly optimized C/C++ backed c
 
 ---
 
-## 🗺️ Roadmap: The Path to Zero-Trust
+## Roadmap: The Path to Zero-Trust
 
 VaultJS is rolling out in strictly modeled phases to ensure absolute systemic stability.
 
@@ -204,7 +204,7 @@ VaultJS is rolling out in strictly modeled phases to ensure absolute systemic st
 
 ---
 
-## 📂 Project Monorepo Structure
+## Project Monorepo Structure
 
 ```text
 VaultJS/
@@ -221,7 +221,7 @@ VaultJS/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 * Node.js `v18.0+`
@@ -243,10 +243,9 @@ npm test
 npm run start:auth
 ```
 
-> **🚨 Security Note:** In production scenarios, never commit your generated `.env`. You must supply `MASTER_SECRET` and `HMAC_KEY` via a secure Hardware Security Module (HSM), AWS KMS, or Hashicorp Vault.
+> **Security Note:** In production scenarios, never commit your generated `.env`. You must supply `MASTER_SECRET` and `HMAC_KEY` via a secure Hardware Security Module (HSM), AWS KMS, or Hashicorp Vault.
 
 <br/>
 <div align="center">
   <i>Built to harden the web against the next generation of threat actors.</i><br/>
-  🛡️
 </div>
