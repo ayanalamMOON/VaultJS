@@ -5,59 +5,242 @@ const { buildClientFingerprint } = require('./client-fingerprint');
 const { solvePow } = require('./pow-solver');
 const { startSilentRefresh } = require('./silent-refresh');
 
+/**
+ * VaultClient — the browser-side entry point for authenticating with a VaultJS
+ * auth-server. Handles:
+ *   - Client-side PBKDF2 pre-hashing before credentials are sent
+ *   - Browser fingerprint / context headers on every request
+ *   - Automatic PoW resolution when the server challenges a login
+ *   - Silent token refresh loop
+ *   - Registration and logout
+ *
+ * @example
+ * const client = new VaultClient({
+ *   baseUrl: 'https://auth.example.com',
+ *   domain: 'example.com',
+ *   contextProvider: () => ({
+ *     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+ *     colorDepth: screen.colorDepth,
+ *     pixelDepth: screen.pixelDepth,
+ *     webglRenderer: getWebGLRenderer()
+ *   })
+ * });
+ * await client.login('alice', 'mypassword');
+ */
 class VaultClient {
-  constructor({ baseUrl, fetchImpl = fetch, contextProvider = () => ({}) }) {
+  /**
+   * @param {object}   opts
+   * @param {string}   opts.baseUrl                     - Auth-server origin (no trailing slash)
+   * @param {string}   [opts.domain='domain.com']       - Domain for PBKDF2 salt
+   * @param {function} [opts.fetchImpl=fetch]           - Fetch implementation (injectable)
+   * @param {function} [opts.contextProvider=()=>({})]  - Returns browser context signals
+   * @param {object}   [opts.refresh]                   - Options forwarded to startSilentRefresh
+   */
+  constructor({
+    baseUrl,
+    domain = 'domain.com',
+    fetchImpl = (typeof fetch !== 'undefined' ? fetch : null),
+    contextProvider = () => ({}),
+    refresh = {}
+  }) {
+    if (!baseUrl) throw new Error('VaultClient: baseUrl is required');
+    if (!fetchImpl) throw new Error('VaultClient: fetchImpl is required (provide a fetch implementation)');
+
     this.baseUrl = baseUrl.replace(/\/$/, '');
+    this.domain = domain;
     this.fetch = fetchImpl;
     this.contextProvider = contextProvider;
-    this.stopRefresh = null;
+    this.refreshOpts = refresh;
+    this._stopRefresh = null;
+    this._authenticated = false;
   }
 
-  headers() {
+  /**
+   * Build request headers including all browser context signals.
+   * @returns {object}
+   */
+  _headers() {
     const ctx = this.contextProvider();
     return {
       'content-type': 'application/json',
-      'x-timezone': ctx.timeZone || 'UTC',
-      'x-color-depth': String(ctx.colorDepth || '24'),
-      'x-pixel-depth': String(ctx.pixelDepth || '24'),
-      'x-webgl-renderer': ctx.webglRenderer || 'unknown',
+      'x-timezone': String(ctx.timeZone || ''),
+      'x-color-depth': String(ctx.colorDepth || ''),
+      'x-pixel-depth': String(ctx.pixelDepth || ''),
+      'x-webgl-renderer': String(ctx.webglRenderer || ''),
       'x-client-fp': buildClientFingerprint(ctx)
     };
   }
 
-  async #post(path, body) {
+  /**
+   * Internal POST helper.
+   * @param {string} path
+   * @param {object} body
+   * @returns {Promise<Response>}
+   */
+  async _post(path, body) {
     return this.fetch(`${this.baseUrl}${path}`, {
       method: 'POST',
       credentials: 'include',
-      headers: this.headers(),
+      headers: this._headers(),
       body: JSON.stringify(body)
     });
   }
 
-  async login(username, password, domain = 'domain.com') {
-    const preHash = deriveClientPreHash(password, username, domain);
-    const body = { username, clientPreHash: preHash };
-    const res = await this.#post('/auth/login', body);
+  /**
+   * Internal GET helper.
+   * @param {string} path
+   * @returns {Promise<Response>}
+   */
+  async _get(path) {
+    return this.fetch(`${this.baseUrl}${path}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: this._headers()
+    });
+  }
 
-    if (res.status === 403) {
-      const payload = await res.json();
-      const powNonce = solvePow(payload.challenge);
-      const retry = await this.#post('/auth/login', { ...body, powNonce });
-      if (!retry.ok) throw new Error(`login failed after pow (${retry.status})`);
-    } else if (!res.ok) {
-      throw new Error(`login failed (${res.status})`);
-    }
+  /**
+   * Register a new user account.
+   * Sends the raw credentials; the server runs its own validation.
+   * Note: unlike login, registration does NOT pre-hash on the client because
+   * the server needs the actual password for KDF parameter negotiation in the
+   * registration path. If you want client-side pre-hash on registration too,
+   * set `preHashRegistration: true` in opts.
+   *
+   * @param {string}  username
+   * @param {string}  password
+   * @param {object}  [opts]
+   * @param {boolean} [opts.preHashRegistration=false]
+   * @returns {Promise<void>}
+   */
+  async register(username, password, { preHashRegistration = false } = {}) {
+    if (!username || !password) throw new Error('username and password are required');
 
-    if (!this.stopRefresh) {
-      this.stopRefresh = startSilentRefresh((path, init) => this.fetch(`${this.baseUrl}${path}`, init));
+    const payload = preHashRegistration
+      ? { username, password: deriveClientPreHash(password, username, this.domain) }
+      : { username, password };
+
+    const res = await this._post('/auth/register', payload);
+    if (res.status === 409) throw new Error('username already taken');
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(`registration failed (${res.status}): ${(body.errors || []).join(', ') || body.error || 'unknown'}`);
     }
   }
 
-  logout() {
-    if (this.stopRefresh) {
-      this.stopRefresh();
-      this.stopRefresh = null;
+  /**
+   * Authenticate with the server. Sends the PBKDF2 pre-hash of the password
+   * so the raw password never leaves the client. Automatically resolves PoW
+   * challenges and starts the silent-refresh loop on success.
+   *
+   * @param {string} username
+   * @param {string} password   - Raw password (pre-hashed internally before sending)
+   * @returns {Promise<void>}
+   */
+  async login(username, password) {
+    if (!username || !password) throw new Error('username and password are required');
+
+    const preHash = deriveClientPreHash(password, username, this.domain);
+    const body = { username, clientPreHash: preHash };
+
+    let res = await this._post('/auth/login', body);
+
+    // Server requires PoW — solve it and retry once
+    if (res.status === 403) {
+      const payload = await res.json().catch(() => ({}));
+      if (!payload.challenge) throw new Error('login failed: unexpected 403 without challenge');
+
+      let powNonce;
+      try {
+        powNonce = solvePow(payload.challenge);
+      } catch {
+        throw new Error('login failed: could not solve PoW challenge');
+      }
+
+      res = await this._post('/auth/login', { ...body, powNonce });
     }
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(`login failed (${res.status}): ${errBody.error || 'invalid credentials'}`);
+    }
+
+    this._authenticated = true;
+
+    // Start the silent-refresh loop if not already running
+    if (!this._stopRefresh) {
+      this._stopRefresh = startSilentRefresh(
+        (path, init) => this.fetch(`${this.baseUrl}${path}`, { ...init, headers: this._headers() }),
+        this.refreshOpts
+      );
+    }
+  }
+
+  /**
+   * Log out from the server and stop the silent-refresh loop.
+   *
+   * @returns {Promise<void>}
+   */
+  async logout() {
+    this._authenticated = false;
+
+    if (this._stopRefresh) {
+      this._stopRefresh();
+      this._stopRefresh = null;
+    }
+
+    try {
+      await this._post('/auth/logout', {});
+    } catch {
+      // Non-fatal — the server cookie will expire naturally
+    }
+  }
+
+  /**
+   * Log out from ALL devices (revokes every session for the current user).
+   * Requires a currently valid session.
+   *
+   * @returns {Promise<void>}
+   */
+  async logoutAll() {
+    this._authenticated = false;
+
+    if (this._stopRefresh) {
+      this._stopRefresh();
+      this._stopRefresh = null;
+    }
+
+    try {
+      await this._post('/auth/logout-all', {});
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  /**
+   * Check whether the client currently believes it is authenticated.
+   * Does NOT make a network call — use GET /session/status for that.
+   *
+   * @returns {boolean}
+   */
+  get isAuthenticated() {
+    return this._authenticated;
+  }
+
+  /**
+   * Verify the session is still valid server-side and return the TTL remaining.
+   *
+   * @returns {Promise<{ok: boolean, ttlRemaining: number, rotation: number}>}
+   */
+  async sessionStatus() {
+    const res = await this._get('/session/status');
+    if (res.status === 401) {
+      this._authenticated = false;
+      if (this._stopRefresh) { this._stopRefresh(); this._stopRefresh = null; }
+      throw new Error('session expired');
+    }
+    if (!res.ok) throw new Error(`session status check failed (${res.status})`);
+    return res.json();
   }
 }
 
