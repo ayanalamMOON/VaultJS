@@ -25,7 +25,8 @@ function hashContextSummary(context = {}) {
     context.userAgent || '',
     context.ip || '',
     context.timeZone || '',
-    context.webglRenderer || ''
+    context.webglRenderer || '',
+    context.webauthnCredentialId || ''
   ].join('|');
   return crypto.createHash('sha256').update(summary).digest('hex').slice(0, 24);
 }
@@ -44,7 +45,8 @@ function buildRiskClaims(context = {}) {
   return {
     ts: trustScore(context),
     bf: ua.browserFamily,
-    mb: ua.isMobile ? 1 : 0
+    mb: ua.isMobile ? 1 : 0,
+    wa: context.webauthnCredentialId ? 1 : 0
   };
 }
 
@@ -92,8 +94,8 @@ function issueToken({ uid, sessionId, context, previousRotation = 0, masterSecre
     risk
   };
 
-  // AAD = uid.sid.rotation.browserFamily — ties ciphertext to these four values
-  const aad = `${uid}.${sessionId}.${rot}.${risk.bf}`;
+  // AAD = uid.sid.rotation.browserFamily.webauthn — ties ciphertext to these values
+  const aad = `${uid}.${sessionId}.${rot}.${risk.bf}.${risk.wa}`;
   const aesKey = deriveEpochKey(masterSecret, epoch);
   const encrypted = encryptPayload(inner, aesKey, aad);
   const token = signEnvelope(encrypted, hmacKey);

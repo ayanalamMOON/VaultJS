@@ -81,6 +81,8 @@ function trustScore(context = {}) {
   if (network === 'public') score -= 5;
   if (network === 'unknown') score -= 15;
 
+  if (context.webauthnCredentialId) score += 50;
+
   return Math.max(0, Math.min(100, score));
 }
 

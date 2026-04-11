@@ -49,6 +49,9 @@ function assertRiskClaims(inner, context) {
   if (mintedScore - runtimeScore > 35) {
     throw new Error('risk profile drift too high');
   }
+  if (inner?.risk?.wa === 1 && !context.webauthnCredentialId) {
+    throw new Error('hardware token bound but no credential provided');
+  }
 }
 
 /**

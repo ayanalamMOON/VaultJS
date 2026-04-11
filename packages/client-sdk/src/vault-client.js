@@ -4,6 +4,7 @@ const { clientPreHash: deriveClientPreHash } = require('./client-crypto');
 const { buildClientFingerprint } = require('./client-fingerprint');
 const { solvePow } = require('./pow-solver');
 const { startSilentRefresh } = require('./silent-refresh');
+const { registerPasskey, loginWithPasskey } = require('./client-webauthn');
 
 /**
  * VaultClient — the browser-side entry point for authenticating with a VaultJS
@@ -53,6 +54,7 @@ class VaultClient {
     this.refreshOpts = refresh;
     this._stopRefresh = null;
     this._authenticated = false;
+    this._webauthnCredentialId = null;
   }
 
   /**
@@ -61,7 +63,7 @@ class VaultClient {
    */
   _headers() {
     const ctx = this.contextProvider();
-    return {
+    const headers = {
       'content-type': 'application/json',
       'x-timezone': String(ctx.timeZone || ''),
       'x-color-depth': String(ctx.colorDepth || ''),
@@ -69,6 +71,10 @@ class VaultClient {
       'x-webgl-renderer': String(ctx.webglRenderer || ''),
       'x-client-fp': buildClientFingerprint(ctx)
     };
+    if (this._webauthnCredentialId || ctx.webauthnCredentialId) {
+      headers['x-webauthn-credential-id'] = String(this._webauthnCredentialId || ctx.webauthnCredentialId);
+    }
+    return headers;
   }
 
   /**
@@ -168,6 +174,71 @@ class VaultClient {
     this._authenticated = true;
 
     // Start the silent-refresh loop if not already running
+    if (!this._stopRefresh) {
+      this._stopRefresh = startSilentRefresh(
+        (path, init) => this.fetch(`${this.baseUrl}${path}`, { ...init, headers: this._headers() }),
+        this.refreshOpts
+      );
+    }
+  }
+
+  /**
+   * Register a new hardware passkey.
+   *
+   * @param {string} username
+   * @returns {Promise<void>}
+   */
+  async registerWithPasskey(username) {
+    if (!username) throw new Error('username is required');
+
+    // 1. Get challenge from server
+    const challengeRes = await this._post('/auth/webauthn/register-challenge', { username });
+    if (!challengeRes.ok) throw new Error('failed to get passkey challenge');
+    const options = await challengeRes.json();
+
+    // 2. Prompt user hardware
+    const credential = await registerPasskey(options);
+
+    // 3. Send attestation
+    const verifyRes = await this._post('/auth/webauthn/register-verify', { username, credential });
+    if (!verifyRes.ok) throw new Error('passkey registration failed');
+    
+    // Auto login
+    this._webauthnCredentialId = credential.id;
+    this._authenticated = true;
+    
+    if (!this._stopRefresh) {
+      this._stopRefresh = startSilentRefresh(
+        (path, init) => this.fetch(`${this.baseUrl}${path}`, { ...init, headers: this._headers() }),
+        this.refreshOpts
+      );
+    }
+  }
+
+  /**
+   * Authenticate via hardware passkey.
+   *
+   * @param {string} username
+   * @returns {Promise<void>}
+   */
+  async loginWithPasskey(username) {
+    if (!username) throw new Error('username is required');
+
+    // 1. Get challenge from server
+    const challengeRes = await this._post('/auth/webauthn/login-challenge', { username });
+    if (!challengeRes.ok) throw new Error('failed to get passkey challenge');
+    const options = await challengeRes.json();
+
+    // 2. Prompt user hardware
+    const assertion = await loginWithPasskey(options);
+
+    // 3. Send physical assertion
+    const verifyRes = await this._post('/auth/webauthn/login-verify', { username, assertion });
+    if (!verifyRes.ok) throw new Error('passkey login failed');
+
+    this._webauthnCredentialId = assertion.id;
+    this._authenticated = true;
+
     if (!this._stopRefresh) {
       this._stopRefresh = startSilentRefresh(
         (path, init) => this.fetch(`${this.baseUrl}${path}`, { ...init, headers: this._headers() }),

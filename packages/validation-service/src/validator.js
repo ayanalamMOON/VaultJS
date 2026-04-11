@@ -5,6 +5,21 @@ const { verifyContext, verifyContextSummary } = require('./context-verifier');
 const { decideValidation } = require('./decision-engine');
 const { auditValidation } = require('./audit-logger');
 
+let wasmEngine = null;
+try {
+  const fs = require('fs');
+  const path = require('path');
+  const wasmPath = path.join(__dirname, ' validation-engine.wasm');
+  if (fs.existsSync(wasmPath)) {
+    const wasmBuffer = fs.readFileSync(wasmPath);
+    const wasmModule = new WebAssembly.Module(wasmBuffer);
+    wasmEngine = new WebAssembly.Instance(wasmModule, {}).exports;
+  }
+} catch (e) {
+  // Silently fallback to pure NodeJS crypto algorithms
+  wasmEngine = null;
+}
+
 /**
  * Run the full validation pipeline — the isolated validation service described
  * in the 4D architecture. This module has NO direct DB access; it operates
@@ -36,13 +51,21 @@ async function runValidation({ token, requestContext, masterSecret, hmacKey, red
   // Steps 1–8 are performed by validateToken. If any step throws, the token
   // is rejected. We catch the error to produce a structured denial.
   try {
-    validated = await validateToken({
-      token,
-      context: requestContext,
-      masterSecret,
-      hmacKey,
-      redis
-    });
+    // Route to WASM if available, else fallback to JS
+    if (wasmEngine && wasmEngine.validateToken) {
+      // Stub for future Rust WASM payload interop
+      // validated = wasmEngine.validateToken({ token, context: requestContext, masterSecret, hmacKey });
+    }
+
+    if (!validated) {
+      validated = await validateToken({
+        token,
+        context: requestContext,
+        masterSecret,
+        hmacKey,
+        redis
+      });
+    }
   } catch (err) {
     // Classify which signal failed based on the error message
     const signals = classifyError(err.message);
