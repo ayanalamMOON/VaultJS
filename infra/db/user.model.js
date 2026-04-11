@@ -1,14 +1,22 @@
 'use strict';
 
-const users = new Map();
+const { runAsync, getAsync } = require('./connection');
 
-function upsertUser(user) {
-  users.set(user.username, user);
-  return user;
+async function upsertUser(user) {
+  await runAsync(`
+    INSERT INTO users (username, password) 
+    VALUES (?, ?)
+    ON CONFLICT(username) DO UPDATE SET password=excluded.password
+  `, [user.username, user.password]);
+  
+  // Mask sensitive DTO
+  const { password, ...safeUser } = user;
+  return safeUser;
 }
 
-function getUserByUsername(username) {
-  return users.get(username) || null;
+async function getUserByUsername(username) {
+  const row = await getAsync('SELECT * FROM users WHERE username = ?', [username]);
+  return row || null;
 }
 
 module.exports = { upsertUser, getUserByUsername };
