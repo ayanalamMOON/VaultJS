@@ -1,6 +1,10 @@
 'use strict';
 
-const { buildFingerprint, normalizeIpPrefix } = require('../../crypto-core/src/fingerprint');
+const {
+    buildFingerprint,
+    normalizeIpPrefix,
+    fingerprintDriftScore
+} = require('../../crypto-core/src/fingerprint');
 const { hashContextSummary } = require('../../token-engine/src/token-factory');
 
 /**
@@ -13,8 +17,21 @@ const { hashContextSummary } = require('../../token-engine/src/token-factory');
  * @returns {boolean}
  */
 function verifyContext(innerPayload, requestContext) {
-  const expected = buildFingerprint(requestContext);
-  return expected === innerPayload.fp;
+    const expected = buildFingerprint(requestContext);
+    return expected === innerPayload.fp;
+}
+
+/**
+ * Compute a normalized context drift score in [0, 100] based on fingerprint
+ * distance. 0 means identical request environment.
+ *
+ * @param {object} innerPayload
+ * @param {object} requestContext
+ * @returns {number}
+ */
+function contextDrift(innerPayload, requestContext) {
+    const expected = buildFingerprint(requestContext);
+    return fingerprintDriftScore(innerPayload?.fp, expected);
 }
 
 /**
@@ -26,8 +43,8 @@ function verifyContext(innerPayload, requestContext) {
  * @returns {boolean}
  */
 function verifyContextSummary(innerPayload, requestContext) {
-  const expected = hashContextSummary(requestContext);
-  return expected === innerPayload.ctx;
+    const expected = hashContextSummary(requestContext);
+    return expected === innerPayload.ctx;
 }
 
 /**
@@ -40,7 +57,7 @@ function verifyContextSummary(innerPayload, requestContext) {
  * @returns {boolean}
  */
 function verifyIpPrefix(mintIp, currentIp) {
-  return normalizeIpPrefix(mintIp) === normalizeIpPrefix(currentIp);
+    return normalizeIpPrefix(mintIp) === normalizeIpPrefix(currentIp);
 }
 
-module.exports = { verifyContext, verifyContextSummary, verifyIpPrefix };
+module.exports = { verifyContext, verifyContextSummary, verifyIpPrefix, contextDrift };

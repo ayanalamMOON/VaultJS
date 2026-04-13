@@ -1,35 +1,35 @@
 'use strict';
 
 const { validateToken } = require('../../token-engine/src/token-validator');
-const { verifyContext, verifyContextSummary } = require('./context-verifier');
+const { verifyContext, verifyContextSummary, contextDrift } = require('./context-verifier');
 const { decideValidation } = require('./decision-engine');
 const { auditValidation } = require('./audit-logger');
 
 let _wasmEnginePromise = null;
 
 async function getWasmEngine() {
-  if (_wasmEnginePromise) return _wasmEnginePromise;
+    if (_wasmEnginePromise) return _wasmEnginePromise;
 
-  _wasmEnginePromise = (async () => {
-    try {
-      const fs = require('fs');
-      const path = require('path');
-      const wasmPath = path.join(__dirname, 'validation-engine.wasm');
-      
-      // Async stat check
-      await fs.promises.access(wasmPath, fs.constants.R_OK);
-      
-      const wasmBuffer = await fs.promises.readFile(wasmPath);
-      // For Node < 16 WebAssembly.instantiate is preferred over new Module
-      const { instance } = await WebAssembly.instantiate(wasmBuffer, {});
-      return instance.exports;
-    } catch (e) {
-      // Silently fallback to pure NodeJS crypto algorithms
-      return null;
-    }
-  })();
+    _wasmEnginePromise = (async () => {
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const wasmPath = path.join(__dirname, 'validation-engine.wasm');
 
-  return _wasmEnginePromise;
+            // Async stat check
+            await fs.promises.access(wasmPath, fs.constants.R_OK);
+
+            const wasmBuffer = await fs.promises.readFile(wasmPath);
+            // For Node < 16 WebAssembly.instantiate is preferred over new Module
+            const { instance } = await WebAssembly.instantiate(wasmBuffer, {});
+            return instance.exports;
+        } catch (e) {
+            // Silently fallback to pure NodeJS crypto algorithms
+            return null;
+        }
+    })();
+
+    return _wasmEnginePromise;
 }
 
 /**
@@ -58,66 +58,101 @@ async function getWasmEngine() {
  * @returns {Promise<{ allow: boolean, reason: string, score: number, payload: object|null }>}
  */
 async function runValidation({ token, requestContext, masterSecret, hmacKey, redis = null }) {
-  let validated;
+    let validated;
 
-  // Steps 1–8 are performed by validateToken. If any step throws, the token
-  // is rejected. We catch the error to produce a structured denial.
-  try {
-    // Route to WASM if available, else fallback to JS
-    const wasmEngine = await getWasmEngine();
-    if (wasmEngine && typeof wasmEngine.validateToken === 'function') {
-      // Stub for future Rust WASM payload interop
-      // validated = wasmEngine.validateToken({ token, context: requestContext, masterSecret, hmacKey });
+    // Steps 1–8 are performed by validateToken. If any step throws, the token
+    // is rejected. We catch the error to produce a structured denial.
+    try {
+        // Route to WASM if available, else fallback to JS
+        const wasmEngine = await getWasmEngine();
+        if (wasmEngine && typeof wasmEngine.validateToken === 'function') {
+            // Stub for future Rust WASM payload interop
+            // validated = wasmEngine.validateToken({ token, context: requestContext, masterSecret, hmacKey });
+        }
+
+        if (!validated) {
+            validated = await validateToken({
+                token,
+                context: requestContext,
+                masterSecret,
+                hmacKey,
+                redis
+            });
+        }
+    } catch (err) {
+        // Classify which signal failed based on the error message
+        const signals = classifyError(err.message);
+        const denied = decideValidation(signals);
+
+        auditValidation({
+            allow: false,
+            reason: err.message,
+            score: denied.score,
+            threshold: denied.threshold,
+            reasons: denied.reasons,
+            action: denied.action,
+            confidence: denied.confidence,
+            tier: denied.tier,
+            context: requestContext
+        });
+
+        return {
+            ...denied,
+            payload: null,
+            trace: {
+                stage: 'pre-decision-validation',
+                error: err.message,
+                signals,
+                action: denied.action,
+                confidence: denied.confidence,
+                tier: denied.tier
+            }
+        };
     }
 
-    if (!validated) {
-      validated = await validateToken({
-        token,
-        context: requestContext,
-        masterSecret,
-        hmacKey,
-        redis
-      });
-    }
-  } catch (err) {
-    // Classify which signal failed based on the error message
-    const signals = classifyError(err.message);
-    const denied = decideValidation(signals);
+    // Steps 9–10: run the decision engine on the successfully-validated payload.
+    // We re-verify context here as an independent second check.
+    const contextValid = verifyContext(validated, requestContext);
+    const contextSummaryValid = verifyContextSummary(validated, requestContext);
+    const drift = contextDrift(validated, requestContext);
 
-    auditValidation({
-      allow: false,
-      reason: err.message,
-      score: denied.score,
-      context: requestContext
+    const decision = decideValidation({
+        signatureValid: true,
+        decryptionValid: true,
+        contextValid: contextValid && contextSummaryValid,
+        replayValid: true,
+        riskScore: validated.runtimeRiskScore,
+        contextDrift: drift
     });
 
-    return { ...denied, payload: null };
-  }
+    auditValidation({
+        allow: decision.allow,
+        reason: decision.reason,
+        score: decision.score,
+        threshold: decision.threshold,
+        reasons: decision.reasons,
+        action: decision.action,
+        confidence: decision.confidence,
+        tier: decision.tier,
+        drift,
+        sid: validated.sid,
+        uid: validated.uid
+    });
 
-  // Steps 9–10: run the decision engine on the successfully-validated payload.
-  // We re-verify context here as an independent second check.
-  const contextValid = verifyContext(validated, requestContext);
-  const contextSummaryValid = verifyContextSummary(validated, requestContext);
-
-  const decision = decideValidation({
-    signatureValid: true,
-    decryptionValid: true,
-    contextValid: contextValid && contextSummaryValid,
-    replayValid: true
-  });
-
-  auditValidation({
-    allow: decision.allow,
-    reason: decision.reason,
-    score: decision.score,
-    sid: validated.sid,
-    uid: validated.uid
-  });
-
-  return {
-    ...decision,
-    payload: decision.allow ? validated : null
-  };
+    return {
+        ...decision,
+        payload: decision.allow ? validated : null,
+        trace: {
+            contextValid,
+            contextSummaryValid,
+            drift,
+            runtimeRiskScore: validated.runtimeRiskScore,
+            runtimeRiskFlags: validated.runtimeRiskFlags || [],
+            action: decision.action,
+            confidence: decision.confidence,
+            tier: decision.tier
+        }
+    };
 }
 
 /**
@@ -128,29 +163,38 @@ async function runValidation({ token, requestContext, masterSecret, hmacKey, red
  * @returns {object} signals
  */
 function classifyError(message) {
-  const msg = String(message).toLowerCase();
+    const msg = String(message).toLowerCase();
 
-  if (msg.includes('signature') || msg.includes('malformed')) {
+    if (msg.includes('signature') || msg.includes('malformed')) {
+        return { signatureValid: false, decryptionValid: false, contextValid: false, replayValid: false };
+    }
+    if (msg.includes('decrypt')) {
+        return { signatureValid: true, decryptionValid: false, contextValid: false, replayValid: false };
+    }
+    if (msg.includes('fingerprint') || msg.includes('context')) {
+        return { signatureValid: true, decryptionValid: true, contextValid: false, replayValid: true };
+    }
+    if (msg.includes('replay') || msg.includes('rotation') || msg.includes('stale') || msg.includes('jti')) {
+        return { signatureValid: true, decryptionValid: true, contextValid: true, replayValid: false };
+    }
+    if (msg.includes('expired') || msg.includes('future') || msg.includes('temporal')) {
+        return { signatureValid: true, decryptionValid: true, contextValid: false, replayValid: false };
+    }
+    if (msg.includes('lifetime exceeds')) {
+        return { signatureValid: true, decryptionValid: true, contextValid: false, replayValid: false };
+    }
+    if (msg.includes('risk') || msg.includes('risky') || msg.includes('drift')) {
+        return { signatureValid: true, decryptionValid: true, contextValid: false, replayValid: true };
+    }
+    if (msg.includes('network trust degraded')) {
+        return { signatureValid: true, decryptionValid: true, contextValid: false, replayValid: true };
+    }
+    if (msg.includes('browser family changed') || msg.includes('blocked by risk flag')) {
+        return { signatureValid: true, decryptionValid: true, contextValid: false, replayValid: true };
+    }
+
+    // Unknown error — assume total failure
     return { signatureValid: false, decryptionValid: false, contextValid: false, replayValid: false };
-  }
-  if (msg.includes('decrypt')) {
-    return { signatureValid: true, decryptionValid: false, contextValid: false, replayValid: false };
-  }
-  if (msg.includes('fingerprint') || msg.includes('context')) {
-    return { signatureValid: true, decryptionValid: true, contextValid: false, replayValid: true };
-  }
-  if (msg.includes('replay') || msg.includes('rotation') || msg.includes('stale') || msg.includes('jti')) {
-    return { signatureValid: true, decryptionValid: true, contextValid: true, replayValid: false };
-  }
-  if (msg.includes('expired') || msg.includes('future') || msg.includes('temporal')) {
-    return { signatureValid: true, decryptionValid: true, contextValid: false, replayValid: false };
-  }
-  if (msg.includes('risk') || msg.includes('risky') || msg.includes('drift')) {
-    return { signatureValid: true, decryptionValid: true, contextValid: false, replayValid: true };
-  }
-
-  // Unknown error — assume total failure
-  return { signatureValid: false, decryptionValid: false, contextValid: false, replayValid: false };
 }
 
 module.exports = { runValidation, classifyError };

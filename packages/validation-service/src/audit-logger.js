@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('crypto');
 const { addAuditEvent } = require('../../../infra/db/audit.model');
 
 /**
@@ -7,10 +8,10 @@ const { addAuditEvent } = require('../../../infra/db/audit.model');
  * (e.g. 'critical' events → real-time PagerDuty alert).
  */
 const SEVERITY = Object.freeze({
-  INFO: 'info',
-  WARN: 'warn',
-  DENY: 'deny',
-  CRITICAL: 'critical'
+    INFO: 'info',
+    WARN: 'warn',
+    DENY: 'deny',
+    CRITICAL: 'critical'
 });
 
 /**
@@ -29,23 +30,43 @@ const SEVERITY = Object.freeze({
  * @param {object}  [event.context] - Request context snapshot
  */
 function auditValidation(event) {
-  const severity = !event.allow
-    ? (event.reason === 'bad_signature' || event.reason === 'replay_detected'
-      ? SEVERITY.CRITICAL
-      : SEVERITY.DENY)
-    : SEVERITY.INFO;
+    const sanitizedContext = sanitizeContext(event.context);
+    const severity = !event.allow
+        ? (event.reason === 'bad_signature' || event.reason === 'replay_detected'
+            ? SEVERITY.CRITICAL
+            : SEVERITY.DENY)
+        : SEVERITY.INFO;
 
-  const record = {
-    type: 'validation',
-    severity,
-    ...event
-  };
+    const record = {
+        id: crypto.randomUUID(),
+        type: 'validation',
+        severity,
+        ...event,
+        context: sanitizedContext,
+        at: new Date().toISOString()
+    };
 
-  try {
-    addAuditEvent(record);
-  } catch {
-    // Never let audit logging crash the validation pipeline
-  }
+    try {
+        addAuditEvent(record);
+    } catch {
+        // Never let audit logging crash the validation pipeline
+    }
+}
+
+function sanitizeContext(context) {
+    if (!context || typeof context !== 'object') return undefined;
+
+    const ip = String(context.ip || '');
+    const ipPrefix = ip.includes(':')
+        ? ip.split(':').slice(0, 4).join(':')
+        : ip.split('.').slice(0, 2).join('.');
+
+    return {
+        ipPrefix,
+        timeZone: context.timeZone || '',
+        hasWebgl: Boolean(context.webglRenderer),
+        uaLength: String(context.userAgent || '').length
+    };
 }
 
 /**
@@ -59,11 +80,17 @@ function auditValidation(event) {
  * @param {string}  event.resource - e.g. 'GET /api/data'
  */
 function auditAccess(event) {
-  try {
-    addAuditEvent({ type: 'access', severity: SEVERITY.INFO, ...event });
-  } catch {
-    // Non-fatal
-  }
+    try {
+        addAuditEvent({
+            id: crypto.randomUUID(),
+            type: 'access',
+            severity: SEVERITY.INFO,
+            ...event,
+            at: new Date().toISOString()
+        });
+    } catch {
+        // Non-fatal
+    }
 }
 
 module.exports = { auditValidation, auditAccess, SEVERITY };

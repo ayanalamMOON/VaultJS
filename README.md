@@ -26,12 +26,12 @@
 
 Web security traditionally relies on 1D or 2D security (token entropy + HTTPS). These paradigms assume the environment is safe. **VaultJS assumes the environment is actively compromised.** We introduce a genuinely novel design space that maps four distinct dimensions to concrete, resilient cryptographic primitives to actively defend session state.
 
-| Dimension | Metaphor | Defense Mechanism | Cryptographic Implementation |
-| :---: | :--- | :--- | :--- |
-| **Length** | **Key Entropy / Spatial Hardening** | Brute-force & Cracking mitigation | **256-bit+** token entropy.<br>Client-side `PBKDF2` + Server-side `Argon2id` (Compound KDF) |
-| **Width** | **Context Environmental Binding** | Session Hijacking & Theft mitigation | **Multi-factor environmental fingerprint** bridging `userAgent`, OS constraints, IP ranges, & native `WebGL` renderers. |
-| **Depth** | **Layered Cryptographic Obfuscation** | Tamper detection & Reverse-engineering mitigation | **3-Tier Nested Encryption Envelope** (Inspired by DRM shielding layers like Denuvo's VM obfuscation). |
-| **Time** | **Temporal Validity & Decay** | Replay attacks & Token permanence mitigation | **Epoch-locked key derivation** (`HKDF` with 5-min intervals) combined with silent, background background refreshes. |
+| Dimension  | Metaphor                              | Defense Mechanism                                 | Cryptographic Implementation                                                                                            |
+| :--------: | :------------------------------------ | :------------------------------------------------ | :---------------------------------------------------------------------------------------------------------------------- |
+| **Length** | **Key Entropy / Spatial Hardening**   | Brute-force & Cracking mitigation                 | **256-bit+** token entropy.<br>Client-side `PBKDF2` + Server-side `Argon2id` (Compound KDF)                             |
+| **Width**  | **Context Environmental Binding**     | Session Hijacking & Theft mitigation              | **Multi-factor environmental fingerprint** bridging `userAgent`, OS constraints, IP ranges, & native `WebGL` renderers. |
+| **Depth**  | **Layered Cryptographic Obfuscation** | Tamper detection & Reverse-engineering mitigation | **3-Tier Nested Encryption Envelope** (Inspired by DRM shielding layers like Denuvo's VM obfuscation).                  |
+|  **Time**  | **Temporal Validity & Decay**         | Replay attacks & Token permanence mitigation      | **Epoch-locked key derivation** (`HKDF` with 5-min intervals) combined with silent, background background refreshes.    |
 
 ---
 
@@ -98,7 +98,7 @@ Tokens are inextricably bound to the exact hardware hardware state they were iss
 * **The Guarantee:** A hijacked token stolen via XSS, transported to a different network or differing browser version, will intrinsically fail decryption.
 
 #### Epoch Key Rotation (`Time`)
-AES keys are derived from a **time-based master key**, shifting strictly in 5-minute epochs. 
+AES keys are derived from a **time-based master key**, shifting strictly in 5-minute epochs.
 ```javascript
 let epoch       = Math.floor(unixtime / 300); // 5-minute shifting blocks
 let epoch_key   = HKDF(masterSecret, salt=epoch, info="session-aes-key");
@@ -127,12 +127,12 @@ The validation gateway executes a strict, atomic pipeline:
 ```mermaid
 sequenceDiagram
     autonumber
-    
+
     actor User
     participant Browser as VaultJS Client SDK
     participant API as Vault API Gateway
     participant ValidationVM as Validation Engine (VM)
-    
+
     rect rgb(30, 41, 59)
       Note over User,ValidationVM: Phase 1: Authentication Length Initialization
       User->>Browser: Enters credentials
@@ -141,7 +141,7 @@ sequenceDiagram
       API->>API: Verify Argon2id(Pre-Hash)
       API-->>Browser: Set-Cookie: 3-Layer Token Encrypted
     end
-    
+
     rect rgb(15, 23, 42)
       Note over Browser,ValidationVM: Phase 2: Epoch Request Lifecycle
       loop Every Request
@@ -154,7 +154,7 @@ sequenceDiagram
           ValidationVM-->>API: Status (Allow / Deny + Audit Log)
       end
     end
-    
+
     rect rgb(30, 41, 59)
       Note over Browser,API: Phase 3: Silent Decay Mitigation
       loop Every 4 Minutes
@@ -170,16 +170,16 @@ sequenceDiagram
 
 Because VaultJS relies exclusively on low-level, highly optimized C/C++ backed cryptographic primitives embedded inside Node's crypto library, the security overhead inside the request lifecycle is near non-existent.
 
-| Component | Compute Context | Added Latency | Note |
-|:---|:---|:---:|:---|
-| **Client PBKDF2** | User Browser | `~150ms` | One-time upon login. Negligible UX impact. |
-| **Server Argon2id** | Auth Server | `~200ms` | One-time upon login. Configurable memory cost. |
-| **Fingerprint Math** | Edge Validation | `< 0.5ms` | Hardware-accelerated SHA-256 buffer mapping. |
-| **AES-GCM Decrypt** | Edge Validation | `< 0.1ms` | Pure AES-NI utilization on all modern CPUs. |
-| **HMAC Digest** | Edge Validation | `< 0.05ms`| Negligible buffering. |
-| **HKDF Derivation** | Edge Validation | `< 0.1ms` | Negligible hashing. |
-| <hr> | <hr> | **TOTAL**: | <hr> | 
-| **System Overhead** | **Per API Call** | **`< 0.8ms`** | **The most secure protocol, with zero bottleneck.** |
+| Component            | Compute Context  | Added Latency | Note                                                |
+| :------------------- | :--------------- | :-----------: | :-------------------------------------------------- |
+| **Client PBKDF2**    | User Browser     |   `~150ms`    | One-time upon login. Negligible UX impact.          |
+| **Server Argon2id**  | Auth Server      |   `~200ms`    | One-time upon login. Configurable memory cost.      |
+| **Fingerprint Math** | Edge Validation  |   `< 0.5ms`   | Hardware-accelerated SHA-256 buffer mapping.        |
+| **AES-GCM Decrypt**  | Edge Validation  |   `< 0.1ms`   | Pure AES-NI utilization on all modern CPUs.         |
+| **HMAC Digest**      | Edge Validation  |  `< 0.05ms`   | Negligible buffering.                               |
+| **HKDF Derivation**  | Edge Validation  |   `< 0.1ms`   | Negligible hashing.                                 |
+| <hr>                 | <hr>             |  **TOTAL**:   | <hr>                                                |
+| **System Overhead**  | **Per API Call** | **`< 0.8ms`** | **The most secure protocol, with zero bottleneck.** |
 
 ---
 
@@ -239,11 +239,122 @@ npm install
 # 3. Quickly verify token integrity via Jest test-suites
 npm test
 
-# 4. Boot the VaultJS Reference Auth Server Layer 
+# 4. Boot the VaultJS Reference Auth Server Layer
 npm run start:auth
 ```
 
 > **Security Note:** In production scenarios, never commit your generated `.env`. You must supply `MASTER_SECRET` and `HMAC_KEY` via a secure Hardware Security Module (HSM), AWS KMS, or Hashicorp Vault.
+
+---
+
+## Operator Guide: SIEM Manifest Security
+
+This runbook focuses on three day-2 operations for the admin export pipeline:
+
+- rotating `SIEM_MANIFEST_SIGNING_KEY`
+- verifying replay-protection chains
+- incident response when verification fails
+
+### 1) Rotate `SIEM_MANIFEST_SIGNING_KEY`
+
+`SIEM_MANIFEST_SIGNING_KEY` signs manifest payloads used by `/admin/audit/export*` workflows.
+If not set, the system falls back to `SIEM_EXPORT_SIGNING_KEY`.
+
+**Recommended rotation cadence:** every 60–90 days, plus immediate rotation after suspected key exposure.
+
+**Rotation steps (safe + auditable):**
+
+1. Generate a new high-entropy key in your secret manager.
+2. Deploy it as `SIEM_MANIFEST_SIGNING_KEY` to all auth-server instances.
+3. Trigger a fresh export batch.
+4. Verify the new batch via `/admin/audit/export/jobs/:batchId/verify`.
+5. Record rotation metadata in your change log (timestamp, actor, environment, first rotated `batchId`).
+
+**Important behavior note:**
+
+- Existing manifests keep their original signature value.
+- Signature verification for older batches requires the historical key used at export time.
+- Keep retired keys in a protected escrow window for forensic validation of legacy batches.
+
+### 2) Verify replay chains operationally
+
+Use the admin endpoints as a continuous integrity check:
+
+- `GET /admin/audit/export/jobs` to enumerate immutable batch snapshots
+- `GET /admin/audit/export/jobs/:batchId/manifest` to retrieve the signed manifest
+- `GET /admin/audit/export/jobs/:batchId/verify` to evaluate replay protection
+
+Treat the following as mandatory success criteria:
+
+- `verification.ok === true` (manifest hash/signature integrity)
+- `chainValid === true` (previous manifest hash can be resolved)
+- `replayProtected === true` (combined chain + signature verification passes)
+
+**Operational pattern:**
+
+- Run verification on every newly exported batch.
+- Run periodic back-checks on recent history (for example, last 24h).
+- Alert on any transition from pass to fail for previously valid batches.
+
+### 3) Incident response when verification fails
+
+When `/verify` indicates failure, classify first, then contain.
+
+**Failure triage:**
+
+- `hashValid=false`: likely manifest or storage tampering/corruption.
+- `signatureValid=false` with `hashValid=true`: likely key mismatch, drift, or post-rotation legacy batch.
+- `chainValid=false`: missing/altered predecessor manifest or data-retention gap.
+
+**Response checklist:**
+
+1. Freeze ingestion/replay for impacted `batchId` values.
+2. Preserve evidence:
+  - manifest file from `SIEM_MANIFEST_DIR`
+  - `export_jobs` row snapshot
+  - service logs around export + verification windows
+3. Re-verify in an isolated environment using the expected signing key for that batch epoch.
+4. If tampering is confirmed:
+  - rotate `SIEM_MANIFEST_SIGNING_KEY` immediately
+  - generate a new clean export batch
+  - mark affected batches as compromised in downstream SIEM tooling
+5. Document root cause and attach hashes (`manifestHash`, `checksumSha256`, `chainSha256`) to the incident record.
+
+For high-severity incidents, pair this with your standard credential and token-secret rotation playbook to close parallel attack paths.
+
+### Copy/Paste Incident Ticket Template
+
+```text
+Title: VaultJS SIEM Manifest Verification Failure
+
+Owner: <owner>
+Severity: <severity>
+
+Batch ID: <batchId>
+Manifest Hash: <manifestHash>
+Chain SHA-256: <chainSha256>
+
+Verification Snapshot:
+- hashValid: <true|false>
+- signatureValid: <true|false|null>
+- chainValid: <true|false>
+- replayProtected: <true|false>
+
+Immediate Containment:
+- [ ] Ingestion/replay paused for impacted batch(es)
+- [ ] Evidence preserved (manifest file, export_jobs snapshot, logs)
+
+Actions Taken:
+- <action 1>
+- <action 2>
+
+Root Cause Summary:
+<summary>
+
+Follow-ups:
+- <follow-up 1>
+- <follow-up 2>
+```
 
 <br/>
 <div align="center">

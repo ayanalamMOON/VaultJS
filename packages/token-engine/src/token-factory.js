@@ -2,16 +2,16 @@
 
 const crypto = require('crypto');
 const {
-  currentEpoch,
-  deriveEpochKey,
-  encryptPayload,
-  signEnvelope,
-  buildFingerprint,
-  nextRotation,
-  randomNonce,
-  TOKEN_TTL_SECONDS
+    currentEpoch,
+    deriveEpochKey,
+    encryptPayload,
+    signEnvelope,
+    buildFingerprint,
+    nextRotation,
+    randomNonce,
+    TOKEN_TTL_SECONDS
 } = require('../../crypto-core/src');
-const { trustScore, parseUserAgent } = require('./security-context');
+const { parseUserAgent, evaluateContext } = require('./security-context');
 
 /**
  * Produce a 24-char hex summary of the request context (ua + ip + tz + webgl).
@@ -21,14 +21,14 @@ const { trustScore, parseUserAgent } = require('./security-context');
  * @returns {string}
  */
 function hashContextSummary(context = {}) {
-  const summary = [
-    context.userAgent || '',
-    context.ip || '',
-    context.timeZone || '',
-    context.webglRenderer || '',
-    context.webauthnCredentialId || ''
-  ].join('|');
-  return crypto.createHash('sha256').update(summary).digest('hex').slice(0, 24);
+    const summary = [
+        context.userAgent || '',
+        context.ip || '',
+        context.timeZone || '',
+        context.webglRenderer || '',
+        context.webauthnCredentialId || ''
+    ].join('|');
+    return crypto.createHash('sha256').update(summary).digest('hex').slice(0, 24);
 }
 
 /**
@@ -41,13 +41,16 @@ function hashContextSummary(context = {}) {
  * @returns {{ ts: number, bf: string, mb: 0|1 }}
  */
 function buildRiskClaims(context = {}) {
-  const ua = parseUserAgent(context.userAgent);
-  return {
-    ts: trustScore(context),
-    bf: ua.browserFamily,
-    mb: ua.isMobile ? 1 : 0,
-    wa: context.webauthnCredentialId ? 1 : 0
-  };
+    const assessment = evaluateContext(context);
+    const ua = parseUserAgent(context.userAgent);
+    return {
+        ts: assessment.score,
+        bf: ua.browserFamily,
+        mb: ua.isMobile ? 1 : 0,
+        wa: context.webauthnCredentialId ? 1 : 0,
+        nw: assessment.network,
+        fl: assessment.flags.slice(0, 8)
+    };
 }
 
 /**
@@ -69,42 +72,42 @@ function buildRiskClaims(context = {}) {
  * @returns {{ token: string, inner: object, aad: string }}
  */
 function issueToken({ uid, sessionId, context, previousRotation = 0, masterSecret, hmacKey, now = Date.now() }) {
-  if (!uid) throw new Error('uid is required');
-  if (!sessionId) throw new Error('sessionId is required');
-  if (!masterSecret) throw new Error('masterSecret is required');
-  if (!hmacKey) throw new Error('hmacKey is required');
+    if (!uid) throw new Error('uid is required');
+    if (!sessionId) throw new Error('sessionId is required');
+    if (!masterSecret) throw new Error('masterSecret is required');
+    if (!hmacKey) throw new Error('hmacKey is required');
 
-  const nowSec = Math.floor(now / 1000);
-  const epoch = currentEpoch(nowSec);
-  const fp = buildFingerprint(context);
-  const risk = buildRiskClaims(context);
-  const rot = nextRotation(previousRotation);
+    const nowSec = Math.floor(now / 1000);
+    const epoch = currentEpoch(nowSec);
+    const fp = buildFingerprint(context);
+    const risk = buildRiskClaims(context);
+    const rot = nextRotation(previousRotation);
 
-  const inner = {
-    uid,
-    sid: sessionId,
-    epoch,
-    fp,
-    rot,
-    nonce: randomNonce(),
-    jti: crypto.randomUUID(),
-    iat: nowSec,
-    exp: nowSec + TOKEN_TTL_SECONDS,
-    ctx: hashContextSummary(context),
-    risk
-  };
+    const inner = {
+        uid,
+        sid: sessionId,
+        epoch,
+        fp,
+        rot,
+        nonce: randomNonce(),
+        jti: crypto.randomUUID(),
+        iat: nowSec,
+        exp: nowSec + TOKEN_TTL_SECONDS,
+        ctx: hashContextSummary(context),
+        risk
+    };
 
-  // AAD = uid.sid.rotation.browserFamily.webauthn — ties ciphertext to these values
-  const aad = `${uid}.${sessionId}.${rot}.${risk.bf}.${risk.wa}`;
-  const aesKey = deriveEpochKey(masterSecret, epoch);
-  const encrypted = encryptPayload(inner, aesKey, aad);
-  const token = signEnvelope(encrypted, hmacKey);
+    // AAD = uid.sid.rotation.browserFamily.webauthn — ties ciphertext to these values
+    const aad = `${uid}.${sessionId}.${rot}.${risk.bf}.${risk.wa}`;
+    const aesKey = deriveEpochKey(masterSecret, epoch);
+    const encrypted = encryptPayload(inner, aesKey, aad);
+    const token = signEnvelope(encrypted, hmacKey);
 
-  return { token, inner, aad };
+    return { token, inner, aad };
 }
 
 module.exports = {
-  issueToken,
-  hashContextSummary,
-  buildRiskClaims
+    issueToken,
+    hashContextSummary,
+    buildRiskClaims
 };

@@ -8,20 +8,21 @@
  * @returns {{ isMobile: boolean, isBotLike: boolean, browserFamily: string }}
  */
 function parseUserAgent(ua = '') {
-  const value = String(ua).toLowerCase();
-  return {
-    isMobile: /mobile|android|iphone|ipad|ipod/.test(value),
-    isBotLike: /bot|crawler|spider|headless|phantom|selenium|puppeteer|playwright/.test(value),
-    browserFamily: value.includes('firefox')
-      ? 'firefox'
-      : value.includes('edg/')
-        ? 'edge'
-        : value.includes('chrome')
-          ? 'chrome'
-          : value.includes('safari')
-            ? 'safari'
-            : 'unknown'
-  };
+    const value = String(ua).toLowerCase();
+    return {
+        isMobile: /mobile|android|iphone|ipad|ipod/.test(value),
+        isBotLike: /bot|crawler|spider|headless|phantom|selenium|puppeteer|playwright/.test(value),
+        isAutomated: /headless|phantom|selenium|puppeteer|playwright|webdriver/.test(value),
+        browserFamily: value.includes('firefox')
+            ? 'firefox'
+            : value.includes('edg/')
+                ? 'edge'
+                : value.includes('chrome')
+                    ? 'chrome'
+                    : value.includes('safari')
+                        ? 'safari'
+                        : 'unknown'
+    };
 }
 
 /**
@@ -35,20 +36,20 @@ function parseUserAgent(ua = '') {
  * @returns {'loopback'|'private'|'ipv6'|'public'|'unknown'}
  */
 function classifyNetwork(ip = '') {
-  const addr = String(ip).trim();
-  if (!addr) return 'unknown';
-  if (addr === '127.0.0.1' || addr === '::1') return 'loopback';
-  if (
-    addr.startsWith('10.') ||
-    addr.startsWith('192.168.') ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(addr) ||
-    addr.startsWith('fc') ||
-    addr.startsWith('fd')
-  ) {
-    return 'private';
-  }
-  if (addr.includes(':')) return 'ipv6';
-  return 'public';
+    const addr = String(ip).trim();
+    if (!addr) return 'unknown';
+    if (addr === '127.0.0.1' || addr === '::1') return 'loopback';
+    if (
+        addr.startsWith('10.') ||
+        addr.startsWith('192.168.') ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(addr) ||
+        addr.startsWith('fc') ||
+        addr.startsWith('fd')
+    ) {
+        return 'private';
+    }
+    if (addr.includes(':')) return 'ipv6';
+    return 'public';
 }
 
 /**
@@ -70,24 +71,68 @@ function classifyNetwork(ip = '') {
  * @returns {number} 0–100
  */
 function trustScore(context = {}) {
-  const ua = parseUserAgent(context.userAgent);
-  const network = classifyNetwork(context.ip);
-  let score = 100;
+    return evaluateContext(context).score;
+}
 
-  if (ua.isBotLike) score -= 50;
-  if (!context.userAgent || String(context.userAgent).length < 20) score -= 10;
-  if (!context.webglRenderer || context.webglRenderer === 'unknown') score -= 10;
-  if (!context.timeZone) score -= 5;
-  if (network === 'public') score -= 5;
-  if (network === 'unknown') score -= 15;
+/**
+ * Rich trust evaluation that returns both score and contributing factors.
+ * This enables downstream policy engines to reason about *why* trust changed.
+ *
+ * @param {object} context
+ * @returns {{ score: number, network: string, ua: object, flags: string[] }}
+ */
+function evaluateContext(context = {}) {
+    const ua = parseUserAgent(context.userAgent);
+    const network = classifyNetwork(context.ip);
+    const flags = [];
+    let score = 100;
 
-  if (context.webauthnCredentialId) score += 50;
+    if (ua.isBotLike) {
+        score -= 50;
+        flags.push('bot_like_ua');
+    }
+    if (ua.isAutomated) {
+        score -= 15;
+        flags.push('automation_framework');
+    }
+    if (!context.userAgent || String(context.userAgent).length < 20) {
+        score -= 10;
+        flags.push('weak_user_agent');
+    }
+    if (!context.webglRenderer || context.webglRenderer === 'unknown') {
+        score -= 10;
+        flags.push('missing_webgl');
+    }
+    if (!context.timeZone) {
+        score -= 5;
+        flags.push('missing_timezone');
+    }
 
-  return Math.max(0, Math.min(100, score));
+    if (network === 'public') {
+        score -= 5;
+        flags.push('public_network');
+    }
+    if (network === 'unknown') {
+        score -= 15;
+        flags.push('unknown_network');
+    }
+
+    if (context.webauthnCredentialId) {
+        score += 50;
+        flags.push('hardware_bound');
+    }
+
+    return {
+        score: Math.max(0, Math.min(100, score)),
+        network,
+        ua,
+        flags
+    };
 }
 
 module.exports = {
-  parseUserAgent,
-  classifyNetwork,
-  trustScore
+    parseUserAgent,
+    classifyNetwork,
+    trustScore,
+    evaluateContext
 };

@@ -16,23 +16,22 @@ const { upsertUser, getUserByUsername } = require('../../../infra/db/user.model'
  * @returns {Promise<object>}       - The stored user record (no passwordHash exposed)
  */
 async function registerUser({ username, password }) {
-  if (!username) throw new Error('username is required');
-  if (!password) throw new Error('password is required');
+    if (!username) throw new Error('username is required');
+    if (!password) throw new Error('password is required');
 
-  // Reject duplicate usernames before hashing to avoid wasting CPU
-  const existing = getUserByUsername(username);
-  if (existing) {
-    const err = new Error('username already taken');
-    err.code = 'DUPLICATE_USER';
-    throw err;
-  }
+    // Reject duplicate usernames before hashing to avoid wasting CPU
+    const existing = await getUserByUsername(username);
+    if (existing) {
+        const err = new Error('username already taken');
+        err.code = 'DUPLICATE_USER';
+        throw err;
+    }
 
-  const passwordHash = await hashPassword(password);
-  const user = upsertUser({ id: username, username, passwordHash, createdAt: new Date().toISOString() });
+    const passwordHash = await hashPassword(password);
+    await upsertUser({ username, password: passwordHash });
 
-  // Never return the password hash to callers
-  const { passwordHash: _omit, ...safeUser } = user;
-  return safeUser;
+    // Return canonical app-level identity shape
+    return { id: username, username };
 }
 
 /**
@@ -48,19 +47,18 @@ async function registerUser({ username, password }) {
  * @returns {Promise<object|null>}
  */
 async function verifyLogin({ username, clientPreHash }) {
-  if (!username || !clientPreHash) return null;
+    if (!username || !clientPreHash) return null;
 
-  const user = getUserByUsername(username);
+    const user = await getUserByUsername(username);
 
-  // Run the full KDF even for unknown users to maintain constant timing
-  // Use a deterministic dummy hash so the cost is identical
-  const hashToCheck = user?.passwordHash ?? '$scryptv2$dummy$dummydummydummy';
-  const ok = await verifyPassword(hashToCheck, clientPreHash).catch(() => false);
+    // Run the full KDF even for unknown users to maintain constant timing
+    // Use a deterministic dummy hash so the cost is identical
+    const hashToCheck = user?.password ?? 'scryptv2$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
+    const ok = await verifyPassword(hashToCheck, clientPreHash).catch(() => false);
 
-  if (!user || !ok) return null;
+    if (!user || !ok) return null;
 
-  const { passwordHash: _omit, ...safeUser } = user;
-  return safeUser;
+    return { id: user.username, username: user.username };
 }
 
 module.exports = { registerUser, verifyLogin };

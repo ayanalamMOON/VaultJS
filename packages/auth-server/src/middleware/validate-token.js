@@ -11,14 +11,15 @@ const { logAnomaly } = require('../anomaly-detector');
  * @returns {object}
  */
 function buildContext(req) {
-  return {
-    userAgent: req.headers['user-agent'] || '',
-    timeZone: req.headers['x-timezone'] || '',
-    colorDepth: req.headers['x-color-depth'] || '',
-    pixelDepth: req.headers['x-pixel-depth'] || '',
-    webglRenderer: req.headers['x-webgl-renderer'] || '',
-    ip: req.security?.clientIp || req.ip || ''
-  };
+    return {
+        userAgent: req.headers['user-agent'] || '',
+        timeZone: req.headers['x-timezone'] || '',
+        colorDepth: req.headers['x-color-depth'] || '',
+        pixelDepth: req.headers['x-pixel-depth'] || '',
+        webglRenderer: req.headers['x-webgl-renderer'] || '',
+        webauthnCredentialId: req.headers['x-webauthn-credential-id'] || '',
+        ip: req.security?.clientIp || req.ip || ''
+    };
 }
 
 /**
@@ -30,8 +31,8 @@ function buildContext(req) {
  * @returns {boolean}
  */
 function shouldRefreshToken(payload, nowSec = Math.floor(Date.now() / 1000)) {
-  const remaining = (payload.exp || 0) - nowSec;
-  return remaining < 240;
+    const remaining = (payload.exp || 0) - nowSec;
+    return remaining < 240;
 }
 
 /**
@@ -41,14 +42,14 @@ function shouldRefreshToken(payload, nowSec = Math.floor(Date.now() / 1000)) {
  * @param {string} token
  */
 function setSessionCookie(res, token) {
-  res.cookie(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    // Max-age mirrors the token TTL + a small buffer so the browser
-    // doesn't drop the cookie before the silent-refresh fires
-    maxAge: 720 * 1000
-  });
+    res.cookie(COOKIE_NAME, token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        // Max-age mirrors the token TTL + a small buffer so the browser
+        // doesn't drop the cookie before the silent-refresh fires
+        maxAge: 720 * 1000
+    });
 }
 
 /**
@@ -68,54 +69,56 @@ function setSessionCookie(res, token) {
  * @returns {import('express').RequestHandler}
  */
 function validateTokenMiddleware({ masterSecret, hmacKey, redis = null }) {
-  return async (req, res, next) => {
-    // Accept token from HttpOnly cookie or Authorization header
-    const token =
-      req.cookies?.[COOKIE_NAME] ||
-      (req.headers.authorization?.startsWith('Bearer ')
-        ? req.headers.authorization.slice(7)
-        : null);
+    return async (req, res, next) => {
+        // Accept token from HttpOnly cookie or Authorization header
+        const token =
+            req.cookies?.[COOKIE_NAME] ||
+            (req.headers.authorization?.startsWith('Bearer ')
+                ? req.headers.authorization.slice(7)
+                : null);
 
-    if (!token) {
-      return res.status(401).json({ error: 'missing token' });
-    }
-
-    try {
-      const context = buildContext(req);
-      const validated = await validateSession({ token, context, masterSecret, hmacKey, redis });
-      req.auth = validated;
-
-      // Silent refresh — rotates the token before it expires
-      if (shouldRefreshToken(validated)) {
-        try {
-          const refreshed = await refreshSession({
-            validatedPayload: validated,
-            context,
-            masterSecret,
-            hmacKey,
-            redis
-          });
-          setSessionCookie(res, refreshed.token);
-        } catch (refreshErr) {
-          // A failed refresh is non-fatal: the current validated token is still good
-          logAnomaly('token_refresh_failure', {
-            ip: context.ip,
-            uid: validated.uid,
-            message: refreshErr.message
-          });
+        if (!token) {
+            return res.status(401).json({ error: 'missing token' });
         }
-      }
 
-      res.setHeader('x-vault-rotation', String(validated.rot));
-      return next();
-    } catch (err) {
-      logAnomaly('token_validation_failure', {
-        message: err.message,
-        ip: req.security?.clientIp || req.ip || 'unknown'
-      });
-      return res.status(401).json({ error: 'invalid session' });
-    }
-  };
+        try {
+            const context = buildContext(req);
+            const validated = await validateSession({ token, context, masterSecret, hmacKey, redis });
+            req.auth = validated;
+
+            // Silent refresh — rotates the token before it expires
+            if (shouldRefreshToken(validated)) {
+                try {
+                    const refreshed = await refreshSession({
+                        validatedPayload: validated,
+                        context,
+                        masterSecret,
+                        hmacKey,
+                        redis
+                    });
+                    setSessionCookie(res, refreshed.token);
+                } catch (refreshErr) {
+                    // A failed refresh is non-fatal: the current validated token is still good
+                    logAnomaly('token_refresh_failure', {
+                        ip: context.ip,
+                        uid: validated.uid,
+                        message: refreshErr.message
+                    });
+                }
+            }
+
+            res.setHeader('x-vault-rotation', String(validated.rot));
+            res.setHeader('x-vault-risk-score', String(validated.runtimeRiskScore ?? validated?.risk?.ts ?? 0));
+            res.setHeader('x-vault-context-drift', String(validated.contextDrift ?? 0));
+            return next();
+        } catch (err) {
+            logAnomaly('token_validation_failure', {
+                message: err.message,
+                ip: req.security?.clientIp || req.ip || 'unknown'
+            });
+            return res.status(401).json({ error: 'invalid session' });
+        }
+    };
 }
 
 module.exports = { validateTokenMiddleware, buildContext, shouldRefreshToken };
