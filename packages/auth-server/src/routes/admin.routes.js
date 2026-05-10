@@ -6,13 +6,15 @@ const express = require('express');
 const {
     listAuditEventsAdvanced,
     getAuditEventStats,
+    addAuditEvent,
     addPolicyChangeHistory,
     listPolicyChangeHistory,
     createExportJobSnapshot,
     getExportJobSnapshot,
     listExportJobSnapshots,
     getLatestExportJobSnapshot,
-    getExportJobByManifestHash
+    getExportJobByManifestHash,
+    getSIEMContainmentSummary
 } = require('../../../../infra/db/audit.model');
 const {
     logAnomaly,
@@ -41,6 +43,15 @@ const {
     loadSignedManifestFile,
     verifySignedManifest
 } = require('../../../validation-service/src/siem-exporter');
+const {
+    containSIEMBatch,
+    getContainmentStatus,
+    listContainmentStatuses,
+    listContainmentHistory,
+    acknowledgeSIEMContainment,
+    resumeSIEMContainment,
+    resolveSIEMContainment
+} = require('../../../validation-service/src/siem-containment');
 
 function parseLimit(raw, { fallback = 100, min = 1, max = 1000 } = {}) {
     const value = Number(raw);
@@ -289,11 +300,18 @@ function adminRoutes() {
     router.get('/audit/export/meta', async (_req, res) => {
         const latestJob = await getLatestExportJobSnapshot({ includeSnapshot: false });
         const stats = await getAuditEventStats();
+        const pausedContainments = await listContainmentStatuses({ limit: 50, status: 'paused' });
+        const containmentSummary = await getSIEMContainmentSummary();
         return res.json({
             ok: true,
             schema: SCHEMA_VERSION,
             generatedAt: new Date().toISOString(),
             stats,
+            containmentSummary,
+            containments: {
+                pausedCount: pausedContainments.length,
+                latestPaused: pausedContainments[0] || null
+            },
             latestJob: latestJob
                 ? {
                     batchId: latestJob.batchId,
@@ -317,10 +335,21 @@ function adminRoutes() {
             includeSnapshot: false
         });
 
+        const containments = await listContainmentStatuses({ limit: 1000 });
+        const containmentMap = new Map(containments.map((row) => [row.batchId, row]));
+        const items = jobs.map((job) => {
+            const containment = containmentMap.get(job.batchId) || null;
+            return {
+                ...job,
+                containment,
+                ingestionPaused: Boolean(containment)
+            };
+        });
+
         return res.json({
             ok: true,
-            count: jobs.length,
-            items: jobs
+            count: items.length,
+            items
         });
     });
 
@@ -331,7 +360,139 @@ function adminRoutes() {
             return res.status(404).json({ ok: false, error: 'export_job_not_found' });
         }
 
-        return res.json({ ok: true, job });
+        const containment = await getContainmentStatus(req.params.batchId);
+
+        return res.json({
+            ok: true,
+            job,
+            containment: containment || null,
+            ingestionPaused: Boolean(containment)
+        });
+    });
+
+    router.get('/audit/export/jobs/:batchId/containment', async (req, res) => {
+        const containment = await getContainmentStatus(req.params.batchId);
+        if (!containment) {
+            return res.status(404).json({ ok: false, error: 'containment_not_found' });
+        }
+
+        return res.json({
+            ok: true,
+            ingestionPaused: containment.status === 'paused',
+            containment
+        });
+    });
+
+    router.get('/audit/export/jobs/:batchId/containment/history', async (req, res) => {
+        const limit = parseLimit(req.query.limit, { fallback: 100, max: 1000 });
+        const beforeId = parseOptionalPositiveInt(req.query.beforeId);
+        const afterId = parseOptionalPositiveInt(req.query.afterId);
+
+        const history = await listContainmentHistory(req.params.batchId, { limit, beforeId, afterId });
+        return res.json({ ok: true, count: history.length, items: history });
+    });
+
+    router.post('/audit/export/jobs/:batchId/containment', async (req, res) => {
+        const job = await getExportJobSnapshot(req.params.batchId, { includeSnapshot: true });
+        if (!job) {
+            return res.status(404).json({ ok: false, error: 'export_job_not_found' });
+        }
+
+        let manifest = job.manifest || null;
+        if (!manifest && job.manifestPath) {
+            try {
+                manifest = loadSignedManifestFile(job.manifestPath);
+            } catch {
+                manifest = null;
+            }
+        }
+
+        const containment = await containSIEMBatch({
+            batchId: req.params.batchId,
+            owner: String(req.body?.owner || req.headers['x-admin-actor'] || 'admin').slice(0, 128),
+            severity: String(req.body?.severity || 'high').toLowerCase(),
+            reason: String(req.body?.reason || 'manual_pause').slice(0, 2048),
+            verification: req.body?.verification || null,
+            exportJob: job,
+            manifest,
+            actor: String(req.headers['x-admin-actor'] || 'admin').slice(0, 128)
+        });
+
+        return res.status(201).json({
+            ok: true,
+            ingestionPaused: true,
+            containment
+        });
+    });
+
+    router.post('/audit/export/jobs/:batchId/containment/acknowledge', async (req, res) => {
+        const actor = String(req.headers['x-admin-actor'] || 'admin').slice(0, 128);
+        const note = String(req.body?.note || '').slice(0, 2048) || null;
+
+        try {
+            const containment = await acknowledgeSIEMContainment({
+                batchId: req.params.batchId,
+                actor,
+                note
+            });
+
+            return res.json({ ok: true, containment });
+        } catch (err) {
+            return res.status(404).json({ ok: false, error: err.message });
+        }
+    });
+
+    router.post('/audit/export/jobs/:batchId/containment/resume', async (req, res) => {
+        const actor = String(req.headers['x-admin-actor'] || 'admin').slice(0, 128);
+        const note = String(req.body?.note || '').slice(0, 2048) || null;
+
+        try {
+            const containment = await resumeSIEMContainment({
+                batchId: req.params.batchId,
+                actor,
+                note
+            });
+
+            return res.json({ ok: true, containment });
+        } catch (err) {
+            return res.status(404).json({ ok: false, error: err.message });
+        }
+    });
+
+    router.post('/audit/export/jobs/:batchId/containment/resolve', async (req, res) => {
+        const actor = String(req.headers['x-admin-actor'] || 'admin').slice(0, 128);
+        const note = String(req.body?.note || '').slice(0, 2048) || null;
+
+        try {
+            const containment = await resolveSIEMContainment({
+                batchId: req.params.batchId,
+                actor,
+                note
+            });
+
+            return res.json({ ok: true, containment });
+        } catch (err) {
+            return res.status(404).json({ ok: false, error: err.message });
+        }
+    });
+
+    router.get('/audit/export/containments', async (req, res) => {
+        const limit = parseLimit(req.query.limit, { fallback: 100, max: 1000 });
+        const beforeId = parseOptionalPositiveInt(req.query.beforeId);
+        const afterId = parseOptionalPositiveInt(req.query.afterId);
+        const status = req.query.status ? String(req.query.status) : null;
+
+        const rows = await listContainmentStatuses({ limit, beforeId, afterId, status });
+        return res.json({ ok: true, count: rows.length, items: rows });
+    });
+
+    router.get('/audit/export/containments/summary', async (_req, res) => {
+        const summary = await getSIEMContainmentSummary();
+        return res.json({
+            ok: true,
+            generatedAt: new Date().toISOString(),
+            summary
+        });
     });
 
     router.get('/audit/export/jobs/:batchId/manifest', async (req, res) => {
@@ -385,13 +546,63 @@ function adminRoutes() {
             chainValid = Boolean(prev);
         }
 
+        const verificationOk = verification.ok && chainValid;
+        let containment = await getContainmentStatus(req.params.batchId);
+
+        if (!verificationOk) {
+            const actor = String(req.headers['x-admin-actor'] || 'admin').slice(0, 128);
+            const reason = !verification.hashValid
+                ? 'manifest_hash_mismatch'
+                : verification.signatureValid === false
+                    ? 'manifest_signature_invalid'
+                    : !chainValid
+                        ? 'manifest_chain_broken'
+                        : 'verification_failed';
+
+            addAuditEvent({
+                type: 'siem_export_verification_failed',
+                severity: 'critical',
+                allow: false,
+                reason,
+                batchId: job.batchId,
+                manifestHash: job.manifestHash,
+                chainValid,
+                verification,
+                at: new Date().toISOString(),
+                details: {
+                    manifestPath: job.manifestPath
+                }
+            });
+
+            containment = await containSIEMBatch({
+                batchId: req.params.batchId,
+                owner: actor,
+                severity: 'critical',
+                reason,
+                verification: {
+                    ...verification,
+                    chainValid,
+                    replayProtected: false
+                },
+                exportJob: job,
+                manifest,
+                actor
+            });
+        }
+
         return res.json({
             ok: true,
             batchId: job.batchId,
             manifestHash: job.manifestHash,
             chainValid,
-            replayProtected: verification.ok && chainValid,
-            verification
+            replayProtected: verificationOk,
+            ingestionPaused: Boolean(containment),
+            containment: containment || null,
+            verification: {
+                ...verification,
+                chainValid,
+                replayProtected: verificationOk
+            }
         });
     });
 
@@ -470,6 +681,23 @@ function adminRoutes() {
             previousManifestHash: manifest.replayProtection?.previousManifestHash || null,
             snapshot: records,
             manifest
+        });
+
+        addAuditEvent({
+            type: 'siem_export_created',
+            severity: 'info',
+            allow: true,
+            batchId,
+            manifestHash: manifest.manifestHash,
+            recordCount: records.length,
+            format,
+            policyProfile,
+            manifestPath,
+            at: new Date().toISOString(),
+            details: {
+                exportJobId: exportJob?.id || null,
+                nextCursor: pageCursor
+            }
         });
 
         if (format === 'ndjson') {

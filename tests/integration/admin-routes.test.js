@@ -1,6 +1,8 @@
 'use strict';
 
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const request = require('supertest');
 const { app } = require('../../packages/auth-server/src/server');
 const { runAsync } = require('../../infra/db/connection');
@@ -13,12 +15,15 @@ const {
 
 const ADMIN_TOKEN = 'test-admin-token';
 const SIGNING_KEY = 'test-siem-signing-key';
+const CONTAINMENT_DIR = path.join(process.cwd(), 'infra', 'db', 'test-siem-containments');
 
 describe('admin routes', () => {
     beforeAll(() => {
         process.env.ADMIN_API_TOKEN = ADMIN_TOKEN;
         process.env.SIEM_EXPORT_SIGNING_KEY = SIGNING_KEY;
         process.env.SIEM_MANIFEST_SIGNING_KEY = SIGNING_KEY;
+        process.env.SIEM_CONTAINMENT_DIR = CONTAINMENT_DIR;
+        fs.rmSync(CONTAINMENT_DIR, { recursive: true, force: true });
     });
 
     afterEach(() => {
@@ -29,6 +34,8 @@ describe('admin routes', () => {
         delete process.env.ADMIN_API_TOKEN;
         delete process.env.SIEM_EXPORT_SIGNING_KEY;
         delete process.env.SIEM_MANIFEST_SIGNING_KEY;
+        delete process.env.SIEM_CONTAINMENT_DIR;
+        fs.rmSync(CONTAINMENT_DIR, { recursive: true, force: true });
     });
 
     test('rejects requests without admin token', async () => {
@@ -187,6 +194,8 @@ describe('admin routes', () => {
         expect(meta.body.ok).toBe(true);
         expect(meta.body.stats).toBeDefined();
         expect(meta.body.stats.total).toBeGreaterThan(0);
+        expect(meta.body.containmentSummary).toBeDefined();
+        expect(meta.body.containmentSummary.total).toBeGreaterThanOrEqual(0);
 
         const exportedJson = await request(app)
             .get(`/admin/audit/export?format=json&limit=1&type=${encodeURIComponent(exportType)}`)
@@ -272,5 +281,228 @@ describe('admin routes', () => {
         expect(verify.body.batchId).toBe(batchId);
         expect(verify.body.chainValid).toBe(true);
         expect(verify.body.replayProtected).toBe(true);
+    });
+
+    test('auto-pauses containment and preserves evidence when verification fails', async () => {
+        const exportType = `containment_test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        await runAsync(
+            'INSERT INTO audits (event_data) VALUES (?)',
+            [JSON.stringify({
+                id: crypto.randomUUID(),
+                type: exportType,
+                severity: 'high',
+                reason: 'containment_test',
+                uid: 'containment-user',
+                at: new Date().toISOString()
+            })]
+        );
+
+        const exportedJson = await request(app)
+            .get(`/admin/audit/export?format=json&limit=5&type=${encodeURIComponent(exportType)}`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        const batchId = exportedJson.body.batchId;
+        const manifestResponse = await request(app)
+            .get(`/admin/audit/export/jobs/${encodeURIComponent(batchId)}/manifest`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        const corruptedManifest = {
+            ...manifestResponse.body.manifest,
+            export: {
+                ...manifestResponse.body.manifest.export,
+                recordCount: manifestResponse.body.manifest.export.recordCount + 1
+            }
+        };
+
+        await runAsync(
+            'UPDATE export_jobs SET manifestJson = ? WHERE batchId = ?',
+            [JSON.stringify(corruptedManifest), batchId]
+        );
+
+        const verify = await request(app)
+            .get(`/admin/audit/export/jobs/${encodeURIComponent(batchId)}/verify`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .set('x-admin-actor', 'incident-operator')
+            .expect(200);
+
+        expect(verify.body.replayProtected).toBe(false);
+        expect(verify.body.ingestionPaused).toBe(true);
+        expect(verify.body.containment).toBeDefined();
+        expect(verify.body.containment.status).toBe('paused');
+
+        const containmentFile = path.join(CONTAINMENT_DIR, `${batchId}.containment.json`);
+        expect(fs.existsSync(containmentFile)).toBe(true);
+
+        const containment = JSON.parse(fs.readFileSync(containmentFile, 'utf8'));
+        expect(containment.batchId).toBe(batchId);
+        expect(containment.state).toBe('paused');
+        expect(Array.isArray(containment.auditEvents)).toBe(true);
+        expect(containment.auditEvents.some((event) => event.batchId === batchId)).toBe(true);
+
+        const containmentLookup = await request(app)
+            .get(`/admin/audit/export/jobs/${encodeURIComponent(batchId)}/containment`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        expect(containmentLookup.body.ingestionPaused).toBe(true);
+        expect(containmentLookup.body.containment.batchId).toBe(batchId);
+
+        const acknowledged = await request(app)
+            .post(`/admin/audit/export/jobs/${encodeURIComponent(batchId)}/containment/acknowledge`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .set('x-admin-actor', 'incident-owner')
+            .send({ note: 'acknowledged for triage' })
+            .expect(200);
+
+        expect(acknowledged.body.ok).toBe(true);
+        expect(acknowledged.body.containment.status).toBe('acknowledged');
+
+        const resumed = await request(app)
+            .post(`/admin/audit/export/jobs/${encodeURIComponent(batchId)}/containment/resume`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .set('x-admin-actor', 'incident-owner')
+            .send({ note: 'resume ingestion for monitoring' })
+            .expect(200);
+
+        expect(resumed.body.ok).toBe(true);
+        expect(resumed.body.containment.status).toBe('acknowledged');
+
+        const resolved = await request(app)
+            .post(`/admin/audit/export/jobs/${encodeURIComponent(batchId)}/containment/resolve`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .set('x-admin-actor', 'incident-owner')
+            .send({ note: 'verified and resolved' })
+            .expect(200);
+
+        expect(resolved.body.ok).toBe(true);
+        expect(resolved.body.containment.status).toBe('resolved');
+
+        const history = await request(app)
+            .get(`/admin/audit/export/jobs/${encodeURIComponent(batchId)}/containment/history`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        expect(history.body.ok).toBe(true);
+        expect(history.body.items.length).toBeGreaterThanOrEqual(3);
+        expect(history.body.items.some((item) => item.toStatus === 'acknowledged')).toBe(true);
+        expect(history.body.items.some((item) => item.toStatus === 'resolved')).toBe(true);
+
+        const summary = await request(app)
+            .get('/admin/audit/export/containments/summary')
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        expect(summary.body.ok).toBe(true);
+        expect(summary.body.summary.total).toBeGreaterThanOrEqual(1);
+        expect(summary.body.summary.byStatus.resolved).toBeGreaterThanOrEqual(1);
+        expect(summary.body.summary.bySeverity.critical).toBeGreaterThanOrEqual(1);
+    });
+
+    test('realistic containment lifecycle updates summary counts', async () => {
+        const baseline = await request(app)
+            .get('/admin/audit/export/containments/summary')
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        const baselineSummary = baseline.body.summary || { byStatus: {}, bySeverity: {}, total: 0 };
+        const getCount = (obj, key) => Number(obj?.[key] || 0);
+
+        const manualType = `summary_manual_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        await runAsync(
+            'INSERT INTO audits (event_data) VALUES (?)',
+            [JSON.stringify({
+                id: crypto.randomUUID(),
+                type: manualType,
+                severity: 'warn',
+                reason: 'summary_manual',
+                uid: 'summary-user',
+                at: new Date().toISOString()
+            })]
+        );
+
+        const manualExport = await request(app)
+            .get(`/admin/audit/export?format=json&limit=5&type=${encodeURIComponent(manualType)}`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        const manualBatchId = manualExport.body.batchId;
+        await request(app)
+            .post(`/admin/audit/export/jobs/${encodeURIComponent(manualBatchId)}/containment`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .set('x-admin-actor', 'operator-1')
+            .send({ severity: 'medium', reason: 'manual_pause_for_review' })
+            .expect(201);
+
+        await request(app)
+            .post(`/admin/audit/export/jobs/${encodeURIComponent(manualBatchId)}/containment/acknowledge`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .set('x-admin-actor', 'operator-1')
+            .send({ note: 'manual containment acknowledged' })
+            .expect(200);
+
+        await request(app)
+            .post(`/admin/audit/export/jobs/${encodeURIComponent(manualBatchId)}/containment/resolve`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .set('x-admin-actor', 'operator-1')
+            .send({ note: 'manual containment resolved' })
+            .expect(200);
+
+        const autoType = `summary_auto_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        await runAsync(
+            'INSERT INTO audits (event_data) VALUES (?)',
+            [JSON.stringify({
+                id: crypto.randomUUID(),
+                type: autoType,
+                severity: 'critical',
+                reason: 'summary_auto',
+                uid: 'summary-user-2',
+                at: new Date().toISOString()
+            })]
+        );
+
+        const autoExport = await request(app)
+            .get(`/admin/audit/export?format=json&limit=5&type=${encodeURIComponent(autoType)}`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        const autoBatchId = autoExport.body.batchId;
+        const autoManifest = await request(app)
+            .get(`/admin/audit/export/jobs/${encodeURIComponent(autoBatchId)}/manifest`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        const corruptedManifest = {
+            ...autoManifest.body.manifest,
+            export: {
+                ...autoManifest.body.manifest.export,
+                recordCount: autoManifest.body.manifest.export.recordCount + 1
+            }
+        };
+
+        await runAsync(
+            'UPDATE export_jobs SET manifestJson = ? WHERE batchId = ?',
+            [JSON.stringify(corruptedManifest), autoBatchId]
+        );
+
+        await request(app)
+            .get(`/admin/audit/export/jobs/${encodeURIComponent(autoBatchId)}/verify`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .set('x-admin-actor', 'operator-2')
+            .expect(200);
+
+        const after = await request(app)
+            .get('/admin/audit/export/containments/summary')
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        const afterSummary = after.body.summary || { byStatus: {}, bySeverity: {}, total: 0 };
+
+        expect(afterSummary.total).toBeGreaterThanOrEqual(baselineSummary.total + 2);
+        expect(getCount(afterSummary.byStatus, 'resolved')).toBeGreaterThanOrEqual(getCount(baselineSummary.byStatus, 'resolved') + 1);
+        expect(getCount(afterSummary.byStatus, 'paused')).toBeGreaterThanOrEqual(getCount(baselineSummary.byStatus, 'paused') + 1);
+        expect(getCount(afterSummary.bySeverity, 'medium')).toBeGreaterThanOrEqual(getCount(baselineSummary.bySeverity, 'medium') + 1);
+        expect(getCount(afterSummary.bySeverity, 'critical')).toBeGreaterThanOrEqual(getCount(baselineSummary.bySeverity, 'critical') + 1);
     });
 });

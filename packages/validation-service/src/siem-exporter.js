@@ -57,10 +57,10 @@ function normalizeOutcome(event = {}) {
 
 function normalizeExportFilters(filters = {}) {
     const severity = parseCsvOrArray(filters.severity);
-    const outcomes = parseCsvOrArray(filters.outcome);
-    const typeContains = String(filters.type || '').trim().toLowerCase();
-    const fromTs = safeTs(filters.from);
-    const toTs = safeTs(filters.to);
+    const outcomes = parseCsvOrArray(filters.outcomes || filters.outcome);
+    const typeContains = String(filters.typeContains || filters.type || '').trim().toLowerCase();
+    const fromTs = safeTs(filters.fromTs ?? filters.from);
+    const toTs = safeTs(filters.toTs ?? filters.to);
 
     return {
         severity,

@@ -102,6 +102,34 @@ function parseExportJobRow(row, { includeSnapshot = false } = {}) {
     return base;
 }
 
+function parseContainmentRow(row) {
+    if (!row) return null;
+
+    return {
+        id: Number(row.id),
+        batchId: row.batchId,
+        status: row.status,
+        owner: row.owner,
+        severity: row.severity,
+        reason: row.reason,
+        pausedAt: row.pausedAt,
+        acknowledgedAt: row.acknowledgedAt,
+        acknowledgedBy: row.acknowledgedBy,
+        resumedAt: row.resumedAt,
+        resumedBy: row.resumedBy,
+        resolvedAt: row.resolvedAt,
+        resolvedBy: row.resolvedBy,
+        lastStatusAt: row.lastStatusAt,
+        notes: row.notes,
+        evidencePath: row.evidencePath,
+        manifestCopyPath: row.manifestCopyPath,
+        verification: parseJson(row.verificationJson, null),
+        exportJob: parseJson(row.exportJobJson, null),
+        manifest: parseJson(row.manifestJson, null),
+        auditEvents: parseJson(row.auditEventsJson, [])
+    };
+}
+
 async function listAuditEventsAdvanced({
     limit = 100,
     beforeId = null,
@@ -131,6 +159,19 @@ async function listAuditEventsAdvanced({
     params.push(safeLimit);
 
     const rows = await allAsync(query, params);
+    return rows.map(parseAuditRow);
+}
+
+async function listAuditEventsByText(searchText, { limit = 50 } = {}) {
+    const needle = String(searchText || '').trim();
+    if (!needle) return [];
+
+    const safeLimit = clampLimit(limit, 1, 1000, 50);
+    const rows = await allAsync(
+        'SELECT * FROM audits WHERE event_data LIKE ? ORDER BY id DESC LIMIT ?',
+        [`%${needle}%`, safeLimit]
+    );
+
     return rows.map(parseAuditRow);
 }
 
@@ -327,10 +368,275 @@ async function listExportJobSnapshots({
     return rows.map((row) => parseExportJobRow(row, { includeSnapshot }));
 }
 
+async function createSIEMContainmentRecord({
+    batchId,
+    status = 'paused',
+    owner = 'admin',
+    severity = 'high',
+    reason = null,
+    acknowledgedAt = null,
+    acknowledgedBy = null,
+    resumedAt = null,
+    resumedBy = null,
+    verification = null,
+    exportJob = null,
+    manifest = null,
+    evidencePath = null,
+    manifestCopyPath = null,
+    auditEvents = [],
+    pausedAt = new Date().toISOString(),
+    resolvedAt = null,
+    resolvedBy = null,
+    lastStatusAt = null,
+    notes = null
+}) {
+    const safeBatchId = String(batchId || '').trim();
+    if (!safeBatchId) throw new Error('batchId is required');
+
+    const safeStatus = String(status || 'paused').trim().toLowerCase() || 'paused';
+    const safeOwner = String(owner || 'admin').trim().slice(0, 128);
+    const safeSeverity = String(severity || 'high').trim().toLowerCase() || 'high';
+    const safeReason = reason == null ? null : String(reason).slice(0, 2048);
+
+    await runAsync(`
+        INSERT INTO siem_containments (
+            batchId, status, owner, severity, reason, pausedAt, acknowledgedAt, acknowledgedBy,
+            resumedAt, resumedBy, resolvedAt, resolvedBy, lastStatusAt, notes,
+            verificationJson, exportJobJson, manifestJson, evidencePath, manifestCopyPath, auditEventsJson
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(batchId) DO UPDATE SET
+            status=excluded.status,
+            owner=excluded.owner,
+            severity=excluded.severity,
+            reason=excluded.reason,
+            pausedAt=excluded.pausedAt,
+            acknowledgedAt=excluded.acknowledgedAt,
+            acknowledgedBy=excluded.acknowledgedBy,
+            resumedAt=excluded.resumedAt,
+            resumedBy=excluded.resumedBy,
+            resolvedAt=excluded.resolvedAt,
+            resolvedBy=excluded.resolvedBy,
+            lastStatusAt=excluded.lastStatusAt,
+            notes=excluded.notes,
+            verificationJson=excluded.verificationJson,
+            exportJobJson=excluded.exportJobJson,
+            manifestJson=excluded.manifestJson,
+            evidencePath=excluded.evidencePath,
+            manifestCopyPath=excluded.manifestCopyPath,
+            auditEventsJson=excluded.auditEventsJson
+    `, [
+        safeBatchId,
+        safeStatus,
+        safeOwner,
+        safeSeverity,
+        safeReason,
+        pausedAt,
+        acknowledgedAt,
+        acknowledgedBy == null ? null : String(acknowledgedBy).slice(0, 128),
+        resumedAt,
+        resumedBy == null ? null : String(resumedBy).slice(0, 128),
+        resolvedAt,
+        resolvedBy == null ? null : String(resolvedBy).slice(0, 128),
+        lastStatusAt,
+        notes == null ? null : String(notes).slice(0, 2048),
+        verification == null ? null : JSON.stringify(verification),
+        exportJob == null ? null : JSON.stringify(exportJob),
+        manifest == null ? null : JSON.stringify(manifest),
+        evidencePath == null ? null : String(evidencePath),
+        manifestCopyPath == null ? null : String(manifestCopyPath),
+        JSON.stringify(auditEvents || [])
+    ]);
+
+    return getSIEMContainmentByBatchId(safeBatchId);
+}
+
+async function getSIEMContainmentByBatchId(batchId) {
+    const safeBatchId = String(batchId || '').trim();
+    if (!safeBatchId) return null;
+
+    const row = await getAsync('SELECT * FROM siem_containments WHERE batchId = ? LIMIT 1', [safeBatchId]);
+    return parseContainmentRow(row);
+}
+
+async function listSIEMContainments({
+    limit = 100,
+    beforeId = null,
+    afterId = null,
+    status = null
+} = {}) {
+    const safeLimit = clampLimit(limit, 1, 1000, 100);
+    const before = Number(beforeId);
+    const after = Number(afterId);
+    const clauses = [];
+    const params = [];
+
+    if (Number.isFinite(before) && before > 0) {
+        clauses.push('id < ?');
+        params.push(before);
+    }
+    if (Number.isFinite(after) && after > 0) {
+        clauses.push('id > ?');
+        params.push(after);
+    }
+    if (status) {
+        clauses.push('status = ?');
+        params.push(String(status).trim().toLowerCase());
+    }
+
+    const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+    const rows = await allAsync(
+        `SELECT * FROM siem_containments ${where} ORDER BY id DESC LIMIT ?`,
+        [...params, safeLimit]
+    );
+
+    return rows.map(parseContainmentRow);
+}
+
+async function getSIEMContainmentSummary() {
+    const rows = await allAsync(
+        'SELECT status, severity, COUNT(*) AS count FROM siem_containments GROUP BY status, severity'
+    );
+
+    const byStatus = {};
+    const bySeverity = {};
+    const matrix = {};
+    let total = 0;
+
+    for (const row of rows || []) {
+        const status = String(row.status || 'unknown').toLowerCase();
+        const severity = String(row.severity || 'unknown').toLowerCase();
+        const count = Number(row.count || 0);
+        total += count;
+
+        byStatus[status] = (byStatus[status] || 0) + count;
+        bySeverity[severity] = (bySeverity[severity] || 0) + count;
+
+        if (!matrix[status]) {
+            matrix[status] = {};
+        }
+        matrix[status][severity] = count;
+    }
+
+    return {
+        total,
+        byStatus,
+        bySeverity,
+        matrix
+    };
+}
+
+async function updateSIEMContainmentStatus(batchId, updates = {}) {
+    const safeBatchId = String(batchId || '').trim();
+    if (!safeBatchId) throw new Error('batchId is required');
+
+    const fields = [];
+    const params = [];
+
+    const mapping = {
+        status: 'status',
+        owner: 'owner',
+        severity: 'severity',
+        reason: 'reason',
+        pausedAt: 'pausedAt',
+        acknowledgedAt: 'acknowledgedAt',
+        acknowledgedBy: 'acknowledgedBy',
+        resumedAt: 'resumedAt',
+        resumedBy: 'resumedBy',
+        resolvedAt: 'resolvedAt',
+        resolvedBy: 'resolvedBy',
+        lastStatusAt: 'lastStatusAt',
+        notes: 'notes'
+    };
+
+    for (const [key, column] of Object.entries(mapping)) {
+        if (updates[key] !== undefined) {
+            fields.push(`${column} = ?`);
+            params.push(updates[key]);
+        }
+    }
+
+    if (fields.length === 0) return getSIEMContainmentByBatchId(safeBatchId);
+
+    params.push(safeBatchId);
+    await runAsync(`UPDATE siem_containments SET ${fields.join(', ')} WHERE batchId = ?`, params);
+    return getSIEMContainmentByBatchId(safeBatchId);
+}
+
+async function addSIEMContainmentHistory({
+    batchId,
+    fromStatus = null,
+    toStatus,
+    actor = 'admin',
+    note = null,
+    details = null
+}) {
+    const safeBatchId = String(batchId || '').trim();
+    if (!safeBatchId) throw new Error('batchId is required');
+    const safeToStatus = String(toStatus || '').trim().toLowerCase();
+    if (!safeToStatus) throw new Error('toStatus is required');
+
+    await runAsync(`
+        INSERT INTO siem_containment_history (
+            batchId, fromStatus, toStatus, actor, note, detailsJson
+        ) VALUES (?, ?, ?, ?, ?, ?)
+    `, [
+        safeBatchId,
+        fromStatus == null ? null : String(fromStatus),
+        safeToStatus,
+        String(actor || 'admin').slice(0, 128),
+        note == null ? null : String(note).slice(0, 2048),
+        details == null ? null : JSON.stringify(details)
+    ]);
+}
+
+async function listSIEMContainmentHistory({
+    batchId,
+    limit = 100,
+    beforeId = null,
+    afterId = null
+} = {}) {
+    const safeBatchId = String(batchId || '').trim();
+    if (!safeBatchId) return [];
+
+    const safeLimit = clampLimit(limit, 1, 1000, 100);
+    const before = Number(beforeId);
+    const after = Number(afterId);
+
+    const clauses = ['batchId = ?'];
+    const params = [safeBatchId];
+
+    if (Number.isFinite(before) && before > 0) {
+        clauses.push('id < ?');
+        params.push(before);
+    }
+    if (Number.isFinite(after) && after > 0) {
+        clauses.push('id > ?');
+        params.push(after);
+    }
+
+    const where = `WHERE ${clauses.join(' AND ')}`;
+    const rows = await allAsync(
+        `SELECT * FROM siem_containment_history ${where} ORDER BY id DESC LIMIT ?`,
+        [...params, safeLimit]
+    );
+
+    return rows.map((row) => ({
+        id: Number(row.id),
+        batchId: row.batchId,
+        fromStatus: row.fromStatus,
+        toStatus: row.toStatus,
+        actor: row.actor,
+        note: row.note,
+        createdAt: row.createdAt,
+        details: parseJson(row.detailsJson, null)
+    }));
+}
+
 module.exports = {
     addAuditEvent,
     listAuditEvents,
     listAuditEventsAdvanced,
+    listAuditEventsByText,
     getAuditEventStats,
     addPolicyChangeHistory,
     listPolicyChangeHistory,
@@ -338,5 +644,12 @@ module.exports = {
     getExportJobSnapshot,
     listExportJobSnapshots,
     getLatestExportJobSnapshot,
-    getExportJobByManifestHash
+    getExportJobByManifestHash,
+    createSIEMContainmentRecord,
+    getSIEMContainmentByBatchId,
+    listSIEMContainments,
+    getSIEMContainmentSummary,
+    updateSIEMContainmentStatus,
+    addSIEMContainmentHistory,
+    listSIEMContainmentHistory
 };

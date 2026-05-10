@@ -322,6 +322,49 @@ When `/verify` indicates failure, classify first, then contain.
 
 For high-severity incidents, pair this with your standard credential and token-secret rotation playbook to close parallel attack paths.
 
+### 4) Containment Summary Health (Meta)
+
+VaultJS now surfaces a **containment health summary** directly on `GET /admin/audit/export/meta`, so operators can see system-wide containment posture without issuing extra calls. The same aggregation is also available via `GET /admin/audit/export/containments/summary` for dashboards and scheduled checks.
+
+**Where it appears (meta response):**
+
+- `containmentSummary`: aggregated counts across all SIEM containment records.
+- `containments.pausedCount`: quick count of *paused* containments (active ingestion pauses).
+- `containments.latestPaused`: the most recent paused containment record, for fast drill-down.
+
+**Summary fields (aggregation semantics):**
+
+- `total`: total number of containment records (includes resolved).
+- `byStatus`: counts keyed by containment status. Common values:
+  - `paused`: ingestion paused for a batch (active containment).
+  - `acknowledged`: containment has an assigned owner and is under active investigation.
+  - `resolved`: containment completed and cleared.
+- `bySeverity`: counts keyed by severity. Common values include `low`, `medium`, `high`, `critical`, or `unknown`.
+- `matrix`: a status → severity cross-tab (e.g., `matrix.paused.critical` gives the number of critical containments currently paused).
+
+**How to interpret the health block:**
+
+- **Paused > 0** means **ingestion is blocked** for one or more batches. Immediate triage is recommended.
+- **Acknowledged > 0** means containment is actively tracked but not yet resolved. Use this as a WIP queue.
+- **Resolved trending upward** indicates recovery throughput; compare with paused/acknowledged to gauge incident backlog.
+- **Critical severity in paused/acknowledged** should trigger high-priority paging.
+
+**Operational guidance (recommended flow):**
+
+1. **Check meta first**: `GET /admin/audit/export/meta` and inspect `containmentSummary` and `containments.pausedCount`.
+2. **Identify active items**: If `pausedCount > 0` or `byStatus.paused > 0`, query `GET /admin/audit/export/containments?status=paused`.
+3. **Review evidence**: For any paused batch, pull `GET /admin/audit/export/jobs/:batchId/containment` and inspect `evidencePath`, `manifestCopyPath`, and `verification` details.
+4. **Confirm replay integrity**: Re-run `GET /admin/audit/export/jobs/:batchId/verify` to validate signatures and chain state.
+5. **Advance the lifecycle**:
+   - `POST /admin/audit/export/jobs/:batchId/containment/acknowledge` to assign ownership.
+   - `POST /admin/audit/export/jobs/:batchId/containment/resolve` once mitigated.
+
+**Notes & limitations:**
+
+- The summary is computed from the `siem_containments` table at request time. Treat it as a **current snapshot**, not a historical trend line.
+- The meta response includes `generatedAt` (for the full payload) but does not add an extra timestamp inside `containmentSummary`.
+- For detailed timelines, use `/admin/audit/export/containments` and `/admin/audit/export/jobs/:batchId/containment/history`.
+
 ### Copy/Paste Incident Ticket Template
 
 ```text
@@ -341,8 +384,8 @@ Verification Snapshot:
 - replayProtected: <true|false>
 
 Immediate Containment:
-- [ ] Ingestion/replay paused for impacted batch(es)
-- [ ] Evidence preserved (manifest file, export_jobs snapshot, logs)
+- [x] Ingestion/replay paused for impacted batch(es)
+- [x] Evidence preserved (manifest file, export_jobs snapshot, logs)
 
 Actions Taken:
 - <action 1>
