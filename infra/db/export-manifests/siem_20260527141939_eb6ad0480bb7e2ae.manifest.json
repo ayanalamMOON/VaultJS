@@ -1,0 +1,33 @@
+{
+  "schema": "vaultjs-siem-manifest.v1",
+  "batchId": "siem_20260527141939_eb6ad0480bb7e2ae",
+  "createdAt": "2026-05-27T14:19:39.731Z",
+  "service": {
+    "name": "vaultjs-auth-server"
+  },
+  "export": {
+    "schema": "vaultjs-siem.v1",
+    "format": "json",
+    "policyProfile": "balanced",
+    "filters": {
+      "severity": [],
+      "outcomes": [],
+      "typeContains": "summary_auto_1779891579726_43aqeg",
+      "fromTs": null,
+      "toTs": null
+    },
+    "recordCount": 1,
+    "checksumSha256": "6ef081335c9ab9b680fed813ae0f46f077f148b9c2da206048907360ac71f1cd",
+    "chainSha256": "433a5df02ad3a346205d43d04e70bed88c942bb419e954ec051818fbb1f69da1",
+    "snapshotChecksumSha256": "6ef081335c9ab9b680fed813ae0f46f077f148b9c2da206048907360ac71f1cd"
+  },
+  "replayProtection": {
+    "nonce": "7868f3fee5cea75bb05705f4ef5c5958",
+    "previousManifestHash": "f05ee2039f0f08290e96f2d310e76b6e4a7040ca21b06d2e0adfb86d4cd4eb29"
+  },
+  "manifestHash": "c31b4d803e37beb181838047cfa01100e86eec6c16f49c19145f2bf66f03375f",
+  "signature": {
+    "algorithm": "hmac-sha256",
+    "value": "ddc0c702551452e4592adcbdc7eaa16759779caab2b45c6b3172517cf03f6616"
+  }
+}

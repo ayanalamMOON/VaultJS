@@ -399,6 +399,78 @@ Follow-ups:
 - <follow-up 2>
 ```
 
+## Admin Endpoints (Operator)
+
+The auth-server exposes a small set of admin-only endpoints intended for operator tasks and emergency session management. All admin endpoints require the `ADMIN_API_TOKEN` to be supplied either via the `x-admin-token` header or as a Bearer token in `Authorization`.
+
+- POST /admin/sessions/:sid/revoke
+  - Purpose: Mark a session as administratively revoked. This writes a durable `revokedAt` marker into the session store so previously issued tokens for the session are rejected even if their cryptographic validation would otherwise succeed.
+  - Behavior: Best-effort. The endpoint will attempt to persist the revoked marker; if persistence fails it will fall back to removing the session state to avoid leaving a live session.
+  - Response: { ok: true, existed: boolean } — `existed` indicates whether a session row was found in the durable store.
+
+- GET /admin/sessions?uid=<uid>&limit=<n>&offset=<n>&activeOnly=<true|false>
+  - Purpose: Paginated listing of sessions for a given user id (`uid`). Use `activeOnly=true` to return only sessions that are not administratively revoked.
+  - Query parameters:
+    - `uid` (required) — the user id to filter sessions by.
+    - `limit` (optional) — number of items to return (default server-side limit applies).
+    - `offset` (optional) — pagination offset.
+    - `activeOnly` (optional) — when `true` excludes sessions with a persisted `revokedAt` marker.
+  - Response: { ok: true, items: [ { sessionId, payload } ], count?: number }
+
+  Example usage (curl)
+
+  1) Revoke a session by session id (x-admin-token header)
+
+  ```bash
+  curl -X POST \
+    -H "x-admin-token: $ADMIN_API_TOKEN" \
+    https://auth.example.internal/admin/sessions/8bd03a4e-0bdb-46b5-8f4b-06795ca27f58/revoke
+
+  # Response
+  # {
+  #   "ok": true,
+  #   "sessionId": "8bd03a4e-0bdb-46b5-8f4b-06795ca27f58",
+  #   "uid": "user-123",
+  #   "existed": true
+  # }
+  ```
+
+  2) List sessions for a user with pagination (returns total count)
+
+  ```bash
+  curl -X GET \
+    -H "x-admin-token: $ADMIN_API_TOKEN" \
+    "https://auth.example.internal/admin/sessions?uid=user-123&limit=50&offset=0&activeOnly=true"
+
+  # Successful response includes pagination metadata:
+  # {
+  #   "ok": true,
+  #   "total": 125,          # total matching sessions across all pages
+  #   "count": 50,          # number of items returned in this page
+  #   "limit": 50,
+  #   "offset": 0,
+  #   "items": [ { "sessionId": "...", "payload": { ... } }, ... ]
+  # }
+  ```
+
+  Notes on usage
+
+  - `total` is the full count of sessions matching the query (useful to compute number of pages).
+  - `count` is the number of items returned in this response (<= `limit`).
+  - `activeOnly=true` filters out administratively revoked sessions (those with a persisted `revokedAt` timestamp).
+  - You can provide the admin token either via `x-admin-token` header or as a Bearer token in `Authorization`.
+
+Revocation semantics
+
+- Durable revocation is enforced by persisting a `revokedAt` timestamp in the session payload stored in the database. The token validation path checks this field and will reject tokens whose session record contains `revokedAt`, even if the token's HMAC and epoch-based encryption remain valid.
+- Admin revoke is intentionally idempotent and best-effort: if the durable store cannot be updated the service will remove in-memory/Redis traces of the session to avoid leaving a live session active.
+
+Operational notes
+
+- Admin endpoints are sensitive: restrict access to your operator network and rotate `ADMIN_API_TOKEN` regularly.
+- Consider scripting bulk revocations via the `revoke` endpoint combined with `GET /admin/sessions` (use `activeOnly=true` when iterating repairs).
+
+
 <br/>
 <div align="center">
   <i>Built to harden the web against the next generation of threat actors.</i><br/>
