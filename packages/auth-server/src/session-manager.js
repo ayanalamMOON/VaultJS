@@ -15,7 +15,7 @@ const MAX_SESSIONS_PER_USER = 10;
 const userSessions = new Map();
 
 function newSessionId() {
-  return crypto.randomUUID();
+    return crypto.randomUUID();
 }
 
 /**
@@ -24,25 +24,29 @@ function newSessionId() {
  *
  * @param {string} uid
  */
-function enforceSessionCeiling(uid) {
-  const set = userSessions.get(uid);
-  if (!set || set.size < MAX_SESSIONS_PER_USER) return;
+async function enforceSessionCeiling(uid) {
+    const set = userSessions.get(uid);
+    if (!set || set.size < MAX_SESSIONS_PER_USER) return;
 
-  // Find the oldest session for this user and evict it
-  let oldestId = null;
-  let oldestTs = Infinity;
-  for (const sid of set) {
-    const s = getSession(sid);
-    if (s && s.createdAt < oldestTs) {
-      oldestTs = s.createdAt;
-      oldestId = sid;
+    // Find the oldest session for this user and evict it
+    let oldestId = null;
+    let oldestTs = Infinity;
+    for (const sid of set) {
+        try {
+            const s = await getSession(sid);
+            if (s && s.createdAt < oldestTs) {
+                oldestTs = s.createdAt;
+                oldestId = sid;
+            }
+        } catch {
+            // ignore parse errors
+        }
     }
-  }
-  if (oldestId) {
-    deleteSession(oldestId);
-    set.delete(oldestId);
-    logAnomaly('session_ceiling_eviction', { uid, evictedSid: oldestId });
-  }
+    if (oldestId) {
+        await deleteSession(oldestId);
+        set.delete(oldestId);
+        logAnomaly('session_ceiling_eviction', { uid, evictedSid: oldestId });
+    }
 }
 
 /**
@@ -52,8 +56,8 @@ function enforceSessionCeiling(uid) {
  * @param {string} sessionId
  */
 function trackSession(uid, sessionId) {
-  if (!userSessions.has(uid)) userSessions.set(uid, new Set());
-  userSessions.get(uid).add(sessionId);
+    if (!userSessions.has(uid)) userSessions.set(uid, new Set());
+    userSessions.get(uid).add(sessionId);
 }
 
 /**
@@ -70,25 +74,25 @@ function trackSession(uid, sessionId) {
  * @returns {Promise<{ token: string, inner: object, aad: string }>}
  */
 async function createSession({ uid, context, masterSecret, hmacKey, redis = null }) {
-  enforceSessionCeiling(uid);
+    await enforceSessionCeiling(uid);
 
-  const sessionId = newSessionId();
-  const issued = issueToken({ uid, sessionId, context, masterSecret, hmacKey });
+    const sessionId = newSessionId();
+    const issued = issueToken({ uid, sessionId, context, masterSecret, hmacKey });
 
-  setSession(sessionId, {
-    uid,
-    rot: issued.inner.rot,
-    createdAt: Date.now()
-  });
-  await setTokenState(
-    sessionId,
-    { rot: issued.inner.rot, jti: issued.inner.jti },
-    600,
-    redis
-  );
+    await setSession(sessionId, {
+        uid,
+        rot: issued.inner.rot,
+        createdAt: Date.now()
+    });
+    await setTokenState(
+        sessionId,
+        { rot: issued.inner.rot, jti: issued.inner.jti },
+        600,
+        redis
+    );
 
-  trackSession(uid, sessionId);
-  return issued;
+    trackSession(uid, sessionId);
+    return issued;
 }
 
 /**
@@ -103,16 +107,19 @@ async function createSession({ uid, context, masterSecret, hmacKey, redis = null
  * @returns {Promise<object>} Validated inner payload
  */
 async function validateSession({ token, context, masterSecret, hmacKey, redis = null }) {
-  const validated = await validateToken({ token, context, masterSecret, hmacKey, redis });
+    const validated = await validateToken({ token, context, masterSecret, hmacKey, redis });
 
-  const session = getSession(validated.sid);
-  if (!session) throw new Error('session not found');
+    const session = await getSession(validated.sid);
+    if (!session) throw new Error('session not found');
 
-  const state = await getTokenState(validated.sid, redis);
-  if (!state) throw new Error('session state missing');
-  if (validated.rot < state.rot) throw new Error('stale rotation');
+    // Reject tokens for sessions that have been administratively revoked
+    if (session.revokedAt) throw new Error('session revoked');
 
-  return validated;
+    const state = await getTokenState(validated.sid, redis);
+    if (!state) throw new Error('session state missing');
+    if (validated.rot < state.rot) throw new Error('stale rotation');
+
+    return validated;
 }
 
 /**
@@ -127,19 +134,19 @@ async function validateSession({ token, context, masterSecret, hmacKey, redis = 
  * @returns {Promise<{ token: string, inner: object, aad: string }>}
  */
 async function refreshSession({ validatedPayload, context, masterSecret, hmacKey, redis = null }) {
-  const refreshed = refreshToken({ validatedPayload, context, masterSecret, hmacKey });
-  setSession(validatedPayload.sid, {
-    uid: validatedPayload.uid,
-    rot: refreshed.inner.rot,
-    updatedAt: Date.now()
-  });
-  await setTokenState(
-    validatedPayload.sid,
-    { rot: refreshed.inner.rot, jti: refreshed.inner.jti },
-    600,
-    redis
-  );
-  return refreshed;
+    const refreshed = refreshToken({ validatedPayload, context, masterSecret, hmacKey });
+    await setSession(validatedPayload.sid, {
+        uid: validatedPayload.uid,
+        rot: refreshed.inner.rot,
+        updatedAt: Date.now()
+    });
+    await setTokenState(
+        validatedPayload.sid,
+        { rot: refreshed.inner.rot, jti: refreshed.inner.jti },
+        600,
+        redis
+    );
+    return refreshed;
 }
 
 /**
@@ -150,24 +157,37 @@ async function refreshSession({ validatedPayload, context, masterSecret, hmacKey
  * @param {import('ioredis').Redis|null} [redis]
  */
 async function revokeSession(sessionId, uid = null, redis = null) {
-  deleteSession(sessionId);
-
-  if (uid) {
-    const set = userSessions.get(uid);
-    if (set) set.delete(sessionId);
-  }
-
-  // Best-effort Redis cleanup — a failure here is non-fatal
-  if (redis) {
+    // Mark session as revoked in the durable store so previously-issued tokens
+    // cannot be used even if in-memory or Redis state is removed.
     try {
-      await Promise.all([
-        redis.del(`vault:session:${sessionId}`),
-        redis.del(`vault:rot:${sessionId}`)
-      ]);
-    } catch {
-      // Non-fatal: key will expire naturally
+        const existing = await getSession(sessionId);
+        const revokedPayload = Object.assign({}, existing || {}, { revokedAt: Date.now() });
+        // Persist revoked marker
+        await setSession(sessionId, revokedPayload);
+    } catch (e) {
+        // If DB update fails, fall back to deleting the session to avoid leaving a
+        // live session around. Failures here are non-fatal for the caller.
+        // Log the failure for diagnostics during tests.
+        console.error('[session-manager] setSession(revoked) failed:', e && e.message);
+        try { await deleteSession(sessionId); } catch (err) { /* ignore */ }
     }
-  }
+
+    if (uid) {
+        const set = userSessions.get(uid);
+        if (set) set.delete(sessionId);
+    }
+
+    // Best-effort Redis cleanup — a failure here is non-fatal
+    if (redis) {
+        try {
+            await Promise.all([
+                redis.del(`vault:session:${sessionId}`),
+                redis.del(`vault:rot:${sessionId}`)
+            ]);
+        } catch {
+            // Non-fatal: key will expire naturally
+        }
+    }
 }
 
 /**
@@ -177,18 +197,18 @@ async function revokeSession(sessionId, uid = null, redis = null) {
  * @param {import('ioredis').Redis|null} [redis]
  */
 async function revokeAllUserSessions(uid, redis = null) {
-  const set = userSessions.get(uid);
-  if (!set) return;
-  const ids = [...set];
-  await Promise.all(ids.map((sid) => revokeSession(sid, uid, redis)));
-  userSessions.delete(uid);
+    const set = userSessions.get(uid);
+    if (!set) return;
+    const ids = [...set];
+    await Promise.all(ids.map((sid) => revokeSession(sid, uid, redis)));
+    userSessions.delete(uid);
 }
 
 module.exports = {
-  COOKIE_NAME,
-  createSession,
-  validateSession,
-  refreshSession,
-  revokeSession,
-  revokeAllUserSessions
+    COOKIE_NAME,
+    createSession,
+    validateSession,
+    refreshSession,
+    revokeSession,
+    revokeAllUserSessions
 };

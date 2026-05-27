@@ -1,0 +1,1748 @@
+[
+  {
+    "sessionId": "1cfafbcf-6c95-44d7-91cf-179186e22eac",
+    "payload": "{\"uid\":\"alice\",\"rot\":1,\"createdAt\":1776106392276}",
+    "uid": "alice",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "a858e724-b865-4413-9e1c-9ae90e9a8c5b",
+    "payload": "{\"uid\":\"alice_1776107066602_feejsc\",\"rot\":1,\"createdAt\":1776107066800}",
+    "uid": "alice_1776107066602_feejsc",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "fea442f1-f167-451b-9b5b-e0d9086d6762",
+    "payload": "{\"uid\":\"alice_1776107577288_qrr7tb\",\"rot\":1,\"createdAt\":1776107577491}",
+    "uid": "alice_1776107577288_qrr7tb",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "f5d2b21b-41b5-49d8-9dc2-d5ca694a2111",
+    "payload": "{\"uid\":\"alice_1776108072099_on91o2\",\"rot\":1,\"createdAt\":1776108072278}",
+    "uid": "alice_1776108072099_on91o2",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "8bd03a4e-0bdb-46b5-8f4b-06795ca27f58",
+    "payload": "{\"uid\":\"alice_1778437039820_t305k8\",\"rot\":1,\"createdAt\":1778437040222}",
+    "uid": "alice_1778437039820_t305k8",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "64f11559-ccf1-48a8-9831-7a762baec252",
+    "payload": "{\"uid\":\"alice_1778437087966_dtjvy8\",\"rot\":1,\"createdAt\":1778437088182}",
+    "uid": "alice_1778437087966_dtjvy8",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "1f99b39b-6734-42d0-83b4-e8295d88e2df",
+    "payload": "{\"uid\":\"alice_1778437159154_dmflms\",\"rot\":1,\"createdAt\":1778437159360}",
+    "uid": "alice_1778437159154_dmflms",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "718c29ab-7c14-4c5a-95d5-29fa2516725c",
+    "payload": "{\"uid\":\"revoke-test-1779889979722\",\"rot\":1,\"createdAt\":1779889979725}",
+    "uid": "revoke-test-1779889979722",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "70933240-2f25-49e9-8bc5-8fc19cf28c17",
+    "payload": "{\"uid\":\"revoke-test-1779890009418\",\"rot\":1,\"createdAt\":1779890009419}",
+    "uid": "revoke-test-1779890009418",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "9dae894f-7719-426d-bfc6-a80b468ce101",
+    "payload": "{\"uid\":\"revoke-test-1779890011847\",\"rot\":1,\"createdAt\":1779890011848}",
+    "uid": "revoke-test-1779890011847",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "049efb10-b0f9-4de6-a51a-36aaf5421ffe",
+    "payload": "{\"uid\":\"revoke-test-1779890025072\",\"rot\":1,\"createdAt\":1779890025074}",
+    "uid": "revoke-test-1779890025072",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "569849a0-68a4-41a8-8687-4595da1ddb49",
+    "payload": "{\"uid\":\"revoke-test-1779890071250\",\"rot\":1,\"createdAt\":1779890071252}",
+    "uid": "revoke-test-1779890071250",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "6b9427a7-d25f-4de9-ac86-f62cd34c5ed9",
+    "payload": "{\"uid\":\"revoke-test-1779890080245\",\"rot\":1,\"createdAt\":1779890080248}",
+    "uid": "revoke-test-1779890080245",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3470e346-cfda-4deb-a90a-7ce7d0c6e2ff",
+    "payload": "{\"uid\":\"revoke-test-1779890122313\",\"rot\":1,\"createdAt\":1779890122314}",
+    "uid": "revoke-test-1779890122313",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "22863cd4-9299-4f36-9b6a-4cde984674ba",
+    "payload": "{\"uid\":\"revoke-test-1779890126933\",\"rot\":1,\"createdAt\":1779890126935}",
+    "uid": "revoke-test-1779890126933",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "8fd45f19-376e-48bc-a93b-eb038d2e060c",
+    "payload": "{\"uid\":\"revoke-test-1779890134580\",\"rot\":1,\"createdAt\":1779890134582}",
+    "uid": "revoke-test-1779890134580",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "260dd3b7-847f-4833-9c2b-c9389485a8da",
+    "payload": "{\"uid\":\"revoke-test-1779890153005\",\"rot\":1,\"createdAt\":1779890153007}",
+    "uid": "revoke-test-1779890153005",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "254d25c4-b374-4545-86f0-749cc45f0ce8",
+    "payload": "{\"uid\":\"revoke-test-1779890181608\",\"rot\":1,\"createdAt\":1779890181610}",
+    "uid": "revoke-test-1779890181608",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "e36ab505-15cb-4258-b862-70ac3e7b51cb",
+    "payload": "{\"uid\":\"revoke-test-1779890217175\",\"rot\":1,\"createdAt\":1779890217177}",
+    "uid": "revoke-test-1779890217175",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3d447a07-bd2e-4b3f-84b4-64c0ee75fd7b",
+    "payload": "{\"uid\":\"list-test-1779890351376\",\"rot\":1,\"createdAt\":1779890351378}",
+    "uid": "list-test-1779890351376",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "47e5889d-2a45-4a3f-b706-02b7e1e5e308",
+    "payload": "{\"uid\":\"list-test-1779890351376\",\"rot\":1,\"createdAt\":1779890351378}",
+    "uid": "list-test-1779890351376",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "4fc01cb0-b98d-44d9-a2f6-6f5818c85db1",
+    "payload": "{\"uid\":\"list-test-1779890406902\",\"rot\":1,\"createdAt\":1779890406904}",
+    "uid": "list-test-1779890406902",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "7d0c781f-833d-4f43-bf38-4b87a28837a6",
+    "payload": "{\"uid\":\"list-test-1779890406902\",\"rot\":1,\"createdAt\":1779890406903}",
+    "uid": "list-test-1779890406902",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "c4b7de9d-46d0-47c1-adcc-e89d2d6ce568",
+    "payload": "{\"uid\":\"list-test-1779890410263\",\"rot\":1,\"createdAt\":1779890410266}",
+    "uid": "list-test-1779890410263",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "d8e69b93-ea9c-4da5-9e12-361ff9a87c48",
+    "payload": "{\"uid\":\"list-test-1779890410263\",\"rot\":1,\"createdAt\":1779890410265}",
+    "uid": "list-test-1779890410263",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "83e9ff8c-efd1-406a-8101-740797cf8c04",
+    "payload": "{\"uid\":\"list-test-1779890417212\",\"rot\":1,\"createdAt\":1779890417214}",
+    "uid": "list-test-1779890417212",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "43297787-226f-4762-aea6-1267346838f8",
+    "payload": "{\"uid\":\"list-test-1779890417212\",\"rot\":1,\"createdAt\":1779890417214}",
+    "uid": "list-test-1779890417212",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "b1af98e4-960f-4540-b3fd-842ffabf6b4f",
+    "payload": "{\"uid\":\"list-test-1779890459252\",\"rot\":1,\"createdAt\":1779890459255}",
+    "uid": "list-test-1779890459252",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "9acedce6-6897-4df6-b9b8-08f94ead9c29",
+    "payload": "{\"uid\":\"list-test-1779890459252\",\"rot\":1,\"createdAt\":1779890459254}",
+    "uid": "list-test-1779890459252",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "53e6c522-9940-42e5-87f5-aa577b8b7a28",
+    "payload": "{\"uid\":\"list-test-1779890465494\",\"rot\":1,\"createdAt\":1779890465497}",
+    "uid": "list-test-1779890465494",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "76fa9c0b-b2d1-45a8-8b31-a404cc8b9caf",
+    "payload": "{\"uid\":\"list-test-1779890465494\",\"rot\":1,\"createdAt\":1779890465496}",
+    "uid": "list-test-1779890465494",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "ac5709f4-82d6-4680-9011-6a6ea23d5736",
+    "payload": "{\"uid\":\"probe-1779890476337\",\"rot\":1,\"createdAt\":1779890476342}",
+    "uid": "probe-1779890476337",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "7671d5b3-1d07-45ad-ad15-186ba710a4b2",
+    "payload": "{\"uid\":\"probe-1779890476337\",\"rot\":1,\"createdAt\":1779890476339}",
+    "uid": "probe-1779890476337",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "0182513f-4904-4ac5-bebe-70d5767e9c39",
+    "payload": "{\"uid\":\"list-test-1779890561292\",\"rot\":1,\"createdAt\":1779890561294}",
+    "uid": "list-test-1779890561292",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "b826c1e4-bab3-4ea6-b0a8-446237cf62c4",
+    "payload": "{\"uid\":\"list-test-1779890561292\",\"rot\":1,\"createdAt\":1779890561308}",
+    "uid": "list-test-1779890561292",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "03a4330c-bc95-493c-b63f-c80ab2bfbc07",
+    "payload": "{\"uid\":\"ceiling-test-1779890679519\",\"rot\":1,\"createdAt\":1779890679521}",
+    "uid": "ceiling-test-1779890679519",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "a99d9ae1-f692-40ad-a98a-4a56588009fb",
+    "payload": "{\"uid\":\"ceiling-test-1779890679519\",\"rot\":1,\"createdAt\":1779890679528}",
+    "uid": "ceiling-test-1779890679519",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "800e3e40-ba05-4513-ae54-fe4d5f562041",
+    "payload": "{\"uid\":\"ceiling-test-1779890679519\",\"rot\":1,\"createdAt\":1779890679531}",
+    "uid": "ceiling-test-1779890679519",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "7c617cba-6767-48e1-9969-7ce251af0c1a",
+    "payload": "{\"uid\":\"ceiling-test-1779890679519\",\"rot\":1,\"createdAt\":1779890679534}",
+    "uid": "ceiling-test-1779890679519",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "f0a55189-72e1-4f91-8e9a-dea94b165653",
+    "payload": "{\"uid\":\"ceiling-test-1779890679519\",\"rot\":1,\"createdAt\":1779890679536}",
+    "uid": "ceiling-test-1779890679519",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "0d3a5611-f227-477d-8f82-a560bff97605",
+    "payload": "{\"uid\":\"ceiling-test-1779890679519\",\"rot\":1,\"createdAt\":1779890679538}",
+    "uid": "ceiling-test-1779890679519",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "1bda687d-e9b5-4d89-9c07-1e70a9f29cb3",
+    "payload": "{\"uid\":\"ceiling-test-1779890679519\",\"rot\":1,\"createdAt\":1779890679541}",
+    "uid": "ceiling-test-1779890679519",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3075579a-5453-4cae-ab36-900e80152a4b",
+    "payload": "{\"uid\":\"ceiling-test-1779890679519\",\"rot\":1,\"createdAt\":1779890679543}",
+    "uid": "ceiling-test-1779890679519",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "fe497c29-b2bf-47df-8d66-08f97ff51610",
+    "payload": "{\"uid\":\"ceiling-test-1779890679519\",\"rot\":1,\"createdAt\":1779890679545}",
+    "uid": "ceiling-test-1779890679519",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "11fdb0ca-31bc-47a1-8006-be072f639a49",
+    "payload": "{\"uid\":\"ceiling-test-1779890679519\",\"rot\":1,\"createdAt\":1779890679547}",
+    "uid": "ceiling-test-1779890679519",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "44a670ca-0768-4c35-bcbd-bc0f59940041",
+    "payload": "{\"uid\":\"ceiling-test-1779890679519\",\"rot\":1,\"createdAt\":1779890679549}",
+    "uid": "ceiling-test-1779890679519",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3e92d5e8-3c96-463b-80ec-61e651e768f3",
+    "payload": "{\"revokedAt\":1779890679566}",
+    "uid": null,
+    "revokedAt": 1779890679566
+  },
+  {
+    "sessionId": "e49eed43-eda2-4439-b5e9-872b9958a7b6",
+    "payload": "{\"revokedAt\":1779890679566}",
+    "uid": null,
+    "revokedAt": 1779890679566
+  },
+  {
+    "sessionId": "49e7c81f-152a-4de3-901a-cdd721fe0878",
+    "payload": "{\"revokedAt\":1779890679566}",
+    "uid": null,
+    "revokedAt": 1779890679566
+  },
+  {
+    "sessionId": "83aa7790-8364-41ed-85d5-3bedb45d57ee",
+    "payload": "{\"uid\":\"ceiling-test-1779890681869\",\"rot\":1,\"createdAt\":1779890681871}",
+    "uid": "ceiling-test-1779890681869",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "9d547d76-6221-4e58-a990-0de7632d4fea",
+    "payload": "{\"uid\":\"ceiling-test-1779890681869\",\"rot\":1,\"createdAt\":1779890681878}",
+    "uid": "ceiling-test-1779890681869",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "c2841deb-31bd-4a55-b0c5-705c714a6cf1",
+    "payload": "{\"uid\":\"ceiling-test-1779890681869\",\"rot\":1,\"createdAt\":1779890681880}",
+    "uid": "ceiling-test-1779890681869",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "5856911d-ca8b-48b8-ad6e-a18307fa567f",
+    "payload": "{\"uid\":\"ceiling-test-1779890681869\",\"rot\":1,\"createdAt\":1779890681882}",
+    "uid": "ceiling-test-1779890681869",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3ff3d7f8-8f8a-45ac-b51b-c853e183eaa0",
+    "payload": "{\"uid\":\"ceiling-test-1779890681869\",\"rot\":1,\"createdAt\":1779890681885}",
+    "uid": "ceiling-test-1779890681869",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "fc35cf56-8fd3-4dce-a3e8-3c245edd7161",
+    "payload": "{\"uid\":\"ceiling-test-1779890681869\",\"rot\":1,\"createdAt\":1779890681887}",
+    "uid": "ceiling-test-1779890681869",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "ecb0313b-f601-4fe5-b470-470b2b817074",
+    "payload": "{\"uid\":\"ceiling-test-1779890681869\",\"rot\":1,\"createdAt\":1779890681889}",
+    "uid": "ceiling-test-1779890681869",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "6e63988e-22cb-4d68-a759-72d00c728767",
+    "payload": "{\"uid\":\"ceiling-test-1779890681869\",\"rot\":1,\"createdAt\":1779890681892}",
+    "uid": "ceiling-test-1779890681869",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "2aecd422-5e8a-4241-8fdf-db7a2a7e0033",
+    "payload": "{\"uid\":\"ceiling-test-1779890681869\",\"rot\":1,\"createdAt\":1779890681894}",
+    "uid": "ceiling-test-1779890681869",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3d991d73-4a64-4361-b466-24301cc39183",
+    "payload": "{\"uid\":\"ceiling-test-1779890681869\",\"rot\":1,\"createdAt\":1779890681897}",
+    "uid": "ceiling-test-1779890681869",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "2fc2e12c-1b9a-429b-b3d0-f929ba10d6ef",
+    "payload": "{\"uid\":\"ceiling-test-1779890681869\",\"rot\":1,\"createdAt\":1779890681899}",
+    "uid": "ceiling-test-1779890681869",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "0376ce80-fac8-4316-9538-58468f4078eb",
+    "payload": "{\"revokedAt\":1779890681915}",
+    "uid": null,
+    "revokedAt": 1779890681915
+  },
+  {
+    "sessionId": "aab1936c-d900-46f7-8c4c-4dcee28f1feb",
+    "payload": "{\"revokedAt\":1779890681915}",
+    "uid": null,
+    "revokedAt": 1779890681915
+  },
+  {
+    "sessionId": "53776a34-8f9e-4147-8da0-8d587c7fd0e9",
+    "payload": "{\"revokedAt\":1779890681915}",
+    "uid": null,
+    "revokedAt": 1779890681915
+  },
+  {
+    "sessionId": "1ac49401-cf66-4a76-928b-388c64481357",
+    "payload": "{\"uid\":\"ceiling-test-1779890731195\",\"rot\":1,\"createdAt\":1779890731207}",
+    "uid": "ceiling-test-1779890731195",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "0baf865d-19a5-490b-b948-865cb2eff752",
+    "payload": "{\"uid\":\"ceiling-test-1779890731195\",\"rot\":1,\"createdAt\":1779890731214}",
+    "uid": "ceiling-test-1779890731195",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "d1ac2f86-468b-43df-b729-dca78963039e",
+    "payload": "{\"uid\":\"ceiling-test-1779890731195\",\"rot\":1,\"createdAt\":1779890731220}",
+    "uid": "ceiling-test-1779890731195",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "e68cc2b8-80c1-4353-b232-86be851b0247",
+    "payload": "{\"uid\":\"ceiling-test-1779890731195\",\"rot\":1,\"createdAt\":1779890731227}",
+    "uid": "ceiling-test-1779890731195",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "9b024db3-c1f9-4865-af06-fe9a66cae0c2",
+    "payload": "{\"uid\":\"ceiling-test-1779890731195\",\"rot\":1,\"createdAt\":1779890731234}",
+    "uid": "ceiling-test-1779890731195",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "dee16711-aaa1-47ed-97b8-beaa9fe2cf34",
+    "payload": "{\"uid\":\"ceiling-test-1779890731195\",\"rot\":1,\"createdAt\":1779890731242}",
+    "uid": "ceiling-test-1779890731195",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "78ff7a26-b37c-421b-a8da-9f95d08f80d7",
+    "payload": "{\"uid\":\"ceiling-test-1779890731195\",\"rot\":1,\"createdAt\":1779890731248}",
+    "uid": "ceiling-test-1779890731195",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "57ed7d5f-63cc-4011-913a-77f6fe98debb",
+    "payload": "{\"uid\":\"ceiling-test-1779890731195\",\"rot\":1,\"createdAt\":1779890731254}",
+    "uid": "ceiling-test-1779890731195",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "f9e0ea21-3d15-41e1-80cc-3b3f32e2837a",
+    "payload": "{\"uid\":\"ceiling-test-1779890731195\",\"rot\":1,\"createdAt\":1779890731262}",
+    "uid": "ceiling-test-1779890731195",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "91d362a5-e979-448c-9c8a-92aba9c7dade",
+    "payload": "{\"uid\":\"ceiling-test-1779890731195\",\"rot\":1,\"createdAt\":1779890731277}",
+    "uid": "ceiling-test-1779890731195",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "01963b45-4d27-4b19-bec0-e90bc98ac01f",
+    "payload": "{\"revokedAt\":1779890731312}",
+    "uid": null,
+    "revokedAt": 1779890731312
+  },
+  {
+    "sessionId": "00deb8d6-a42e-41db-b8f1-2d9285998a95",
+    "payload": "{\"revokedAt\":1779890731312}",
+    "uid": null,
+    "revokedAt": 1779890731312
+  },
+  {
+    "sessionId": "d56b31d5-10b9-4ca3-bdfb-c11b063d0c25",
+    "payload": "{\"revokedAt\":1779890731312}",
+    "uid": null,
+    "revokedAt": 1779890731312
+  },
+  {
+    "sessionId": "6ea2eb2b-7afb-4365-8bcc-55c613e32e3c",
+    "payload": "{\"uid\":\"ceiling-test-1779890739874\",\"rot\":1,\"createdAt\":1779890739883}",
+    "uid": "ceiling-test-1779890739874",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "730b88f2-932d-48dd-b00d-6519ba6620f6",
+    "payload": "{\"uid\":\"ceiling-test-1779890739874\",\"rot\":1,\"createdAt\":1779890739885}",
+    "uid": "ceiling-test-1779890739874",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "9899bb0c-0fea-4170-962d-20f097b92e00",
+    "payload": "{\"uid\":\"ceiling-test-1779890739874\",\"rot\":1,\"createdAt\":1779890739888}",
+    "uid": "ceiling-test-1779890739874",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "6a6fd249-f88d-490d-9710-16b10c109fe9",
+    "payload": "{\"uid\":\"ceiling-test-1779890739874\",\"rot\":1,\"createdAt\":1779890739890}",
+    "uid": "ceiling-test-1779890739874",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "db883f30-fe17-4814-b703-e19ca733158a",
+    "payload": "{\"uid\":\"ceiling-test-1779890739874\",\"rot\":1,\"createdAt\":1779890739892}",
+    "uid": "ceiling-test-1779890739874",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "4bd5afac-0aee-43ef-9f06-beef7b3dd764",
+    "payload": "{\"uid\":\"ceiling-test-1779890739874\",\"rot\":1,\"createdAt\":1779890739894}",
+    "uid": "ceiling-test-1779890739874",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "9b5e2627-34d9-4319-b011-6aa971d19b20",
+    "payload": "{\"uid\":\"ceiling-test-1779890739874\",\"rot\":1,\"createdAt\":1779890739897}",
+    "uid": "ceiling-test-1779890739874",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "c63dc6fb-36d5-4ba6-a5e8-9a31b2118c67",
+    "payload": "{\"uid\":\"ceiling-test-1779890739874\",\"rot\":1,\"createdAt\":1779890739899}",
+    "uid": "ceiling-test-1779890739874",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "70752e31-6f83-4cfd-af95-ba769bb02adc",
+    "payload": "{\"uid\":\"ceiling-test-1779890739874\",\"rot\":1,\"createdAt\":1779890739901}",
+    "uid": "ceiling-test-1779890739874",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "5cf4ba32-810b-4753-9f93-76ee683df8f2",
+    "payload": "{\"uid\":\"ceiling-test-1779890739874\",\"rot\":1,\"createdAt\":1779890739907}",
+    "uid": "ceiling-test-1779890739874",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "bc2c379e-8524-49ac-a3d2-9a9a8ba528a7",
+    "payload": "{\"revokedAt\":1779890739920}",
+    "uid": null,
+    "revokedAt": 1779890739920
+  },
+  {
+    "sessionId": "ef5c6d5d-d1d7-4572-b106-fb81073aba67",
+    "payload": "{\"revokedAt\":1779890739920}",
+    "uid": null,
+    "revokedAt": 1779890739920
+  },
+  {
+    "sessionId": "1f433480-6879-4ca6-a10c-681a3170aff7",
+    "payload": "{\"revokedAt\":1779890739920}",
+    "uid": null,
+    "revokedAt": 1779890739920
+  },
+  {
+    "sessionId": "5d4473d4-d2c8-4b10-a45e-27b72fe085e5",
+    "payload": "{\"uid\":\"ceiling-test-1779890760514\",\"rot\":1,\"createdAt\":1779890760522}",
+    "uid": "ceiling-test-1779890760514",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "6998ad4e-c6b2-465f-8a74-d562a31a79f5",
+    "payload": "{\"uid\":\"ceiling-test-1779890760514\",\"rot\":1,\"createdAt\":1779890760525}",
+    "uid": "ceiling-test-1779890760514",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "72029b43-4910-4a2b-a653-591cf6bbcf48",
+    "payload": "{\"uid\":\"ceiling-test-1779890760514\",\"rot\":1,\"createdAt\":1779890760528}",
+    "uid": "ceiling-test-1779890760514",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "90989a70-52a7-42aa-83c5-11e82a9a80cc",
+    "payload": "{\"uid\":\"ceiling-test-1779890760514\",\"rot\":1,\"createdAt\":1779890760531}",
+    "uid": "ceiling-test-1779890760514",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "9e213c15-5126-4dab-88a9-d3c55ce38ba8",
+    "payload": "{\"uid\":\"ceiling-test-1779890760514\",\"rot\":1,\"createdAt\":1779890760533}",
+    "uid": "ceiling-test-1779890760514",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "d0dbb7b1-39f4-49ad-abfd-bc642ba2187a",
+    "payload": "{\"uid\":\"ceiling-test-1779890760514\",\"rot\":1,\"createdAt\":1779890760536}",
+    "uid": "ceiling-test-1779890760514",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "bb5e1ba3-5f15-407b-adf5-563f44ac6db9",
+    "payload": "{\"uid\":\"ceiling-test-1779890760514\",\"rot\":1,\"createdAt\":1779890760538}",
+    "uid": "ceiling-test-1779890760514",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "86b3b6f0-685c-407b-afa9-013d8113672a",
+    "payload": "{\"uid\":\"ceiling-test-1779890760514\",\"rot\":1,\"createdAt\":1779890760540}",
+    "uid": "ceiling-test-1779890760514",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "b868b4f2-985c-4a4e-a796-0125ab86554e",
+    "payload": "{\"uid\":\"ceiling-test-1779890760514\",\"rot\":1,\"createdAt\":1779890760543}",
+    "uid": "ceiling-test-1779890760514",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "0d42aabb-a853-4e6d-b022-0e41f82c4c25",
+    "payload": "{\"uid\":\"ceiling-test-1779890760514\",\"rot\":1,\"createdAt\":1779890760549}",
+    "uid": "ceiling-test-1779890760514",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "02260a87-b4ca-44b3-ac33-dfbb1d7a0e39",
+    "payload": "{\"revokedAt\":1779890760561}",
+    "uid": null,
+    "revokedAt": 1779890760561
+  },
+  {
+    "sessionId": "4c2d71b7-f04c-4ad5-9b6a-e9cd229b9661",
+    "payload": "{\"revokedAt\":1779890760561}",
+    "uid": null,
+    "revokedAt": 1779890760561
+  },
+  {
+    "sessionId": "45dd5e6c-31bf-4a3e-b83d-8569a28af609",
+    "payload": "{\"revokedAt\":1779890760561}",
+    "uid": null,
+    "revokedAt": 1779890760561
+  },
+  {
+    "sessionId": "dbad9ef9-1893-4fa5-8c55-6934cb2026df",
+    "payload": "{\"revokedAt\":1779890776165}",
+    "uid": null,
+    "revokedAt": 1779890776165
+  },
+  {
+    "sessionId": "6e1c0044-c836-487e-97c5-3dc8d403b32c",
+    "payload": "{\"revokedAt\":1779890776165}",
+    "uid": null,
+    "revokedAt": 1779890776165
+  },
+  {
+    "sessionId": "77e0fe58-e43c-46cb-939d-38fdcc44feda",
+    "payload": "{\"revokedAt\":1779890776165}",
+    "uid": null,
+    "revokedAt": 1779890776165
+  },
+  {
+    "sessionId": "ff009272-1bf7-46f9-96f4-0dc231255e00",
+    "payload": "{\"revokedAt\":1779890803036}",
+    "uid": null,
+    "revokedAt": 1779890803036
+  },
+  {
+    "sessionId": "0ba94802-b775-4cc2-854f-e061a0733be3",
+    "payload": "{\"revokedAt\":1779890803036}",
+    "uid": null,
+    "revokedAt": 1779890803036
+  },
+  {
+    "sessionId": "59ed0b5c-22e6-4b0f-ac74-ec3aef4f5156",
+    "payload": "{\"revokedAt\":1779890803036}",
+    "uid": null,
+    "revokedAt": 1779890803036
+  },
+  {
+    "sessionId": "0ca31f1d-d7c5-49f4-aecd-f6dffbffc33a",
+    "payload": "{\"uid\":\"manual-revoke-1779890830693\",\"rot\":1,\"createdAt\":1779890830695,\"revokedAt\":1779890830709}",
+    "uid": "manual-revoke-1779890830693",
+    "revokedAt": 1779890830709
+  },
+  {
+    "sessionId": "9321c0c2-b330-4f46-8193-dfbfd2ae6e42",
+    "payload": "{\"uid\":\"manual-revoke-1779890830693\",\"rot\":1,\"createdAt\":1779890830702,\"revokedAt\":1779890830709}",
+    "uid": "manual-revoke-1779890830693",
+    "revokedAt": 1779890830709
+  },
+  {
+    "sessionId": "31c61bd1-1731-413d-80d2-37f0f5d4011c",
+    "payload": "{\"uid\":\"manual-revoke-1779890830693\",\"rot\":1,\"createdAt\":1779890830705,\"revokedAt\":1779890830709}",
+    "uid": "manual-revoke-1779890830693",
+    "revokedAt": 1779890830709
+  },
+  {
+    "sessionId": "70f472a3-d425-49e5-b738-aea867583fbb",
+    "payload": "{\"uid\":\"ceiling-test-1779890835584\",\"rot\":1,\"createdAt\":1779890835592}",
+    "uid": "ceiling-test-1779890835584",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "ac277198-db56-4a76-a711-6c34ee0702fa",
+    "payload": "{\"uid\":\"ceiling-test-1779890835584\",\"rot\":1,\"createdAt\":1779890835594}",
+    "uid": "ceiling-test-1779890835584",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "52589b0e-ef27-4857-a929-3ead96dff936",
+    "payload": "{\"uid\":\"ceiling-test-1779890835584\",\"rot\":1,\"createdAt\":1779890835597}",
+    "uid": "ceiling-test-1779890835584",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "d9adca31-056e-4f8c-8f45-b41bc9fe5d0c",
+    "payload": "{\"uid\":\"ceiling-test-1779890835584\",\"rot\":1,\"createdAt\":1779890835599}",
+    "uid": "ceiling-test-1779890835584",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "e8790823-618a-4aee-8450-107b278db95c",
+    "payload": "{\"uid\":\"ceiling-test-1779890835584\",\"rot\":1,\"createdAt\":1779890835600}",
+    "uid": "ceiling-test-1779890835584",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "d5856790-9f12-487c-bc96-308ef0f46090",
+    "payload": "{\"uid\":\"ceiling-test-1779890835584\",\"rot\":1,\"createdAt\":1779890835602}",
+    "uid": "ceiling-test-1779890835584",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "b6c514dc-f266-48f0-b240-082304d98b8a",
+    "payload": "{\"uid\":\"ceiling-test-1779890835584\",\"rot\":1,\"createdAt\":1779890835604}",
+    "uid": "ceiling-test-1779890835584",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "66025b69-4630-4278-b028-d9f30c862211",
+    "payload": "{\"uid\":\"ceiling-test-1779890835584\",\"rot\":1,\"createdAt\":1779890835606}",
+    "uid": "ceiling-test-1779890835584",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3df966d3-3e76-44ce-81a4-cd8006614034",
+    "payload": "{\"uid\":\"ceiling-test-1779890835584\",\"rot\":1,\"createdAt\":1779890835609}",
+    "uid": "ceiling-test-1779890835584",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "f9440a85-6294-4b11-aa72-95982063566c",
+    "payload": "{\"uid\":\"ceiling-test-1779890835584\",\"rot\":1,\"createdAt\":1779890835614}",
+    "uid": "ceiling-test-1779890835584",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "a58ff3d9-8a16-4f02-915b-6fcbe4a1e0ac",
+    "payload": "{\"uid\":\"revokeall-test-1779890835621\",\"rot\":1,\"createdAt\":1779890835621,\"revokedAt\":1779890835627}",
+    "uid": "revokeall-test-1779890835621",
+    "revokedAt": 1779890835627
+  },
+  {
+    "sessionId": "2633af6e-c42f-4c09-b3de-46ac446a2b1d",
+    "payload": "{\"uid\":\"revokeall-test-1779890835621\",\"rot\":1,\"createdAt\":1779890835623,\"revokedAt\":1779890835627}",
+    "uid": "revokeall-test-1779890835621",
+    "revokedAt": 1779890835627
+  },
+  {
+    "sessionId": "e533cb14-d9d2-4352-af3d-eb0fb7cd10a2",
+    "payload": "{\"uid\":\"revokeall-test-1779890835621\",\"rot\":1,\"createdAt\":1779890835625,\"revokedAt\":1779890835627}",
+    "uid": "revokeall-test-1779890835621",
+    "revokedAt": 1779890835627
+  },
+  {
+    "sessionId": "8deba421-94d4-4e8c-b2e7-55eb5ed02f76",
+    "payload": "{\"uid\":\"alice_1779890882749_0km532\",\"rot\":1,\"createdAt\":1779890882938}",
+    "uid": "alice_1779890882749_0km532",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "72adf89d-8e4e-4119-b329-f4a80ae41955",
+    "payload": "{\"uid\":\"revoke-test-1779890883115\",\"rot\":1,\"createdAt\":1779890883116,\"revokedAt\":1779890883134}",
+    "uid": "revoke-test-1779890883115",
+    "revokedAt": 1779890883134
+  },
+  {
+    "sessionId": "4d025c6e-b2db-42bd-b6a8-b1a816cc2201",
+    "payload": "{\"uid\":\"list-test-1779890883227\",\"rot\":1,\"createdAt\":1779890883227}",
+    "uid": "list-test-1779890883227",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "c7071f31-e1b0-4120-9dcb-069093f8273e",
+    "payload": "{\"uid\":\"list-test-1779890883227\",\"rot\":1,\"createdAt\":1779890883240}",
+    "uid": "list-test-1779890883227",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "c3034c83-8e61-4d04-9d4e-9f93686ac85f",
+    "payload": "{\"uid\":\"ceiling-test-1779890883295\",\"rot\":1,\"createdAt\":1779890883304}",
+    "uid": "ceiling-test-1779890883295",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "b4557ff8-c4e0-46eb-b393-a5a765212fb1",
+    "payload": "{\"uid\":\"ceiling-test-1779890883295\",\"rot\":1,\"createdAt\":1779890883306}",
+    "uid": "ceiling-test-1779890883295",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "5c4aa94d-86b3-41a9-8428-96a6cd6ff6f7",
+    "payload": "{\"uid\":\"ceiling-test-1779890883295\",\"rot\":1,\"createdAt\":1779890883308}",
+    "uid": "ceiling-test-1779890883295",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "58b6c7d2-9084-41e7-a386-8daa15f191a2",
+    "payload": "{\"uid\":\"ceiling-test-1779890883295\",\"rot\":1,\"createdAt\":1779890883310}",
+    "uid": "ceiling-test-1779890883295",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "cb08ea6b-1693-4caa-998d-c46f98a67508",
+    "payload": "{\"uid\":\"ceiling-test-1779890883295\",\"rot\":1,\"createdAt\":1779890883312}",
+    "uid": "ceiling-test-1779890883295",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "f604dea8-f8a8-4f87-8c3b-1f7ec2a03eef",
+    "payload": "{\"uid\":\"ceiling-test-1779890883295\",\"rot\":1,\"createdAt\":1779890883313}",
+    "uid": "ceiling-test-1779890883295",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "4f952ddc-892e-4248-bdd1-5e68f829d6c2",
+    "payload": "{\"uid\":\"ceiling-test-1779890883295\",\"rot\":1,\"createdAt\":1779890883315}",
+    "uid": "ceiling-test-1779890883295",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "d916ba02-ba58-425d-9ea9-1dc77b3a7d83",
+    "payload": "{\"uid\":\"ceiling-test-1779890883295\",\"rot\":1,\"createdAt\":1779890883317}",
+    "uid": "ceiling-test-1779890883295",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "89117cf1-39d7-474f-8ba7-b4effc76b9d6",
+    "payload": "{\"uid\":\"ceiling-test-1779890883295\",\"rot\":1,\"createdAt\":1779890883319}",
+    "uid": "ceiling-test-1779890883295",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "5ee7d39f-a147-460c-bd0e-20d9e5792230",
+    "payload": "{\"uid\":\"ceiling-test-1779890883295\",\"rot\":1,\"createdAt\":1779890883325}",
+    "uid": "ceiling-test-1779890883295",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "b98f3722-0bbc-41dd-99cb-31146c18fe9c",
+    "payload": "{\"uid\":\"revokeall-test-1779890883330\",\"rot\":1,\"createdAt\":1779890883330,\"revokedAt\":1779890883337}",
+    "uid": "revokeall-test-1779890883330",
+    "revokedAt": 1779890883337
+  },
+  {
+    "sessionId": "8e21cf97-b388-4be8-92c2-00f3d1ce3454",
+    "payload": "{\"uid\":\"revokeall-test-1779890883330\",\"rot\":1,\"createdAt\":1779890883332,\"revokedAt\":1779890883337}",
+    "uid": "revokeall-test-1779890883330",
+    "revokedAt": 1779890883337
+  },
+  {
+    "sessionId": "a8c76c53-4ca2-4088-8b67-b7f939248626",
+    "payload": "{\"uid\":\"revokeall-test-1779890883330\",\"rot\":1,\"createdAt\":1779890883334,\"revokedAt\":1779890883337}",
+    "uid": "revokeall-test-1779890883330",
+    "revokedAt": 1779890883337
+  },
+  {
+    "sessionId": "81f6d54b-c9aa-40df-9ef2-560f793a6dcd",
+    "payload": "{\"uid\":\"list-test-1779890925256\",\"rot\":1,\"createdAt\":1779890925258}",
+    "uid": "list-test-1779890925256",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "68daf04b-cc4a-411e-b067-fd942c38f251",
+    "payload": "{\"uid\":\"list-test-1779890925256\",\"rot\":1,\"createdAt\":1779890925266}",
+    "uid": "list-test-1779890925256",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "00920969-4f00-4263-8b9a-a328e5bc65ec",
+    "payload": "{\"uid\":\"list-test-1779890950400\",\"rot\":1,\"createdAt\":1779890950402}",
+    "uid": "list-test-1779890950400",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "ed728836-a48a-4416-894b-cc8cab3db72e",
+    "payload": "{\"uid\":\"list-test-1779890950400\",\"rot\":1,\"createdAt\":1779890950412}",
+    "uid": "list-test-1779890950400",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "c8a72fae-50e8-4b8f-adc6-cbf04ceed36a",
+    "payload": "{\"uid\":\"list-test-1779890968519\",\"rot\":1,\"createdAt\":1779890968521}",
+    "uid": "list-test-1779890968519",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "06f0a440-99a4-4cf6-95c8-99479a00afad",
+    "payload": "{\"uid\":\"list-test-1779890968519\",\"rot\":1,\"createdAt\":1779890968531}",
+    "uid": "list-test-1779890968519",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "bd1b43d1-013c-4780-92f5-38265755a132",
+    "payload": "{\"uid\":\"list-test-1779891028248\",\"rot\":1,\"createdAt\":1779891028251}",
+    "uid": "list-test-1779891028248",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "5ca43619-3eb6-495e-ad16-011534b2c48c",
+    "payload": "{\"uid\":\"list-test-1779891034523\",\"rot\":1,\"createdAt\":1779891034525}",
+    "uid": "list-test-1779891034523",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3098bfb2-87c4-46ad-9c7a-b5718fd29a54",
+    "payload": "{\"uid\":\"list-test-1779891060461\",\"rot\":1,\"createdAt\":1779891060462}",
+    "uid": "list-test-1779891060461",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "6c7f295b-cbed-4424-b7d6-ddac3e403a7e",
+    "payload": "{\"uid\":\"list-test-1779891060461\",\"rot\":1,\"createdAt\":1779891060477}",
+    "uid": "list-test-1779891060461",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "9252b2a8-b9b3-4a7a-9ccf-07ec3a8102c3",
+    "payload": "{\"uid\":\"list-test-1779891066850\",\"rot\":1,\"createdAt\":1779891066852}",
+    "uid": "list-test-1779891066850",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "1e3c0e4f-a2d2-4504-9de2-713e5b53b242",
+    "payload": "{\"uid\":\"list-test-1779891066850\",\"rot\":1,\"createdAt\":1779891066859}",
+    "uid": "list-test-1779891066850",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "ecde198b-9668-49ee-924b-cea8712d28f8",
+    "payload": "{\"uid\":\"alice_1779891066969_dvf3y2\",\"rot\":1,\"createdAt\":1779891067156}",
+    "uid": "alice_1779891066969_dvf3y2",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "d935ae1d-ab53-4eff-8252-c1e34184ce83",
+    "payload": "{\"uid\":\"revoke-test-1779891067263\",\"rot\":1,\"createdAt\":1779891067263,\"revokedAt\":1779891067283}",
+    "uid": "revoke-test-1779891067263",
+    "revokedAt": 1779891067283
+  },
+  {
+    "sessionId": "b4056386-d8fe-4ba9-a92c-0580812c4b2e",
+    "payload": "{\"uid\":\"ceiling-test-1779891067332\",\"rot\":1,\"createdAt\":1779891067353}",
+    "uid": "ceiling-test-1779891067332",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "af6fe860-1a8d-4669-9b70-4a7b01c9eae3",
+    "payload": "{\"uid\":\"ceiling-test-1779891067332\",\"rot\":1,\"createdAt\":1779891067355}",
+    "uid": "ceiling-test-1779891067332",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "42e5fe87-87ae-4f6a-8040-27a1312f34d0",
+    "payload": "{\"uid\":\"ceiling-test-1779891067332\",\"rot\":1,\"createdAt\":1779891067358}",
+    "uid": "ceiling-test-1779891067332",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "9ecac853-ead7-43c9-b611-8c8d08f17b70",
+    "payload": "{\"uid\":\"ceiling-test-1779891067332\",\"rot\":1,\"createdAt\":1779891067360}",
+    "uid": "ceiling-test-1779891067332",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "e8cc9df4-bbbf-49f1-bc9f-cd4fd736f6e4",
+    "payload": "{\"uid\":\"ceiling-test-1779891067332\",\"rot\":1,\"createdAt\":1779891067362}",
+    "uid": "ceiling-test-1779891067332",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "7b5d2578-ed3c-43f5-a6cc-29630571f170",
+    "payload": "{\"uid\":\"ceiling-test-1779891067332\",\"rot\":1,\"createdAt\":1779891067365}",
+    "uid": "ceiling-test-1779891067332",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "ecfcc755-87b4-4d02-8b53-50f09366a875",
+    "payload": "{\"uid\":\"ceiling-test-1779891067332\",\"rot\":1,\"createdAt\":1779891067367}",
+    "uid": "ceiling-test-1779891067332",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "878445e1-8c31-4bf0-991e-d8a0657a9f79",
+    "payload": "{\"uid\":\"ceiling-test-1779891067332\",\"rot\":1,\"createdAt\":1779891067369}",
+    "uid": "ceiling-test-1779891067332",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "6f718243-d553-41d8-a85c-90eb8662184d",
+    "payload": "{\"uid\":\"ceiling-test-1779891067332\",\"rot\":1,\"createdAt\":1779891067372}",
+    "uid": "ceiling-test-1779891067332",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "9c9c4ea1-1e66-4f59-ad8c-9d1b47a307e2",
+    "payload": "{\"uid\":\"ceiling-test-1779891067332\",\"rot\":1,\"createdAt\":1779891067377}",
+    "uid": "ceiling-test-1779891067332",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "f61aba51-a724-448c-9b49-61b49c8cde57",
+    "payload": "{\"uid\":\"revokeall-test-1779891067382\",\"rot\":1,\"createdAt\":1779891067382,\"revokedAt\":1779891067388}",
+    "uid": "revokeall-test-1779891067382",
+    "revokedAt": 1779891067388
+  },
+  {
+    "sessionId": "a90f33bd-6856-4831-8f28-b31c68005208",
+    "payload": "{\"uid\":\"revokeall-test-1779891067382\",\"rot\":1,\"createdAt\":1779891067385,\"revokedAt\":1779891067388}",
+    "uid": "revokeall-test-1779891067382",
+    "revokedAt": 1779891067388
+  },
+  {
+    "sessionId": "84aadbf7-8a24-4e0b-8664-29adeadb66a5",
+    "payload": "{\"uid\":\"revokeall-test-1779891067382\",\"rot\":1,\"createdAt\":1779891067386,\"revokedAt\":1779891067389}",
+    "uid": "revokeall-test-1779891067382",
+    "revokedAt": 1779891067389
+  },
+  {
+    "sessionId": "d53cc2ea-5987-4663-8995-6b2725fc318f",
+    "payload": "{\"uid\":\"alice_1779891187395_cy537w\",\"rot\":1,\"createdAt\":1779891187578}",
+    "uid": "alice_1779891187395_cy537w",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3086b4bf-51d6-4575-b1fe-6f6dda4a8711",
+    "payload": "{\"uid\":\"revoke-test-1779891187681\",\"rot\":1,\"createdAt\":1779891187682,\"revokedAt\":1779891187700}",
+    "uid": "revoke-test-1779891187681",
+    "revokedAt": 1779891187700
+  },
+  {
+    "sessionId": "bcfa5d8a-27f5-4e09-bae7-96484a6faef1",
+    "payload": "{\"uid\":\"list-test-1779891187804\",\"rot\":1,\"createdAt\":1779891187804}",
+    "uid": "list-test-1779891187804",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "de7d0743-6f34-44e8-936b-9d3594641471",
+    "payload": "{\"uid\":\"list-test-1779891187804\",\"rot\":1,\"createdAt\":1779891187821}",
+    "uid": "list-test-1779891187804",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "343a1e96-d4d8-44d1-9196-ca5688e7173b",
+    "payload": "{\"uid\":\"ceiling-test-1779891187878\",\"rot\":1,\"createdAt\":1779891187886}",
+    "uid": "ceiling-test-1779891187878",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "51558474-e4c0-43b2-96c5-9b0d31e2e710",
+    "payload": "{\"uid\":\"ceiling-test-1779891187878\",\"rot\":1,\"createdAt\":1779891187888}",
+    "uid": "ceiling-test-1779891187878",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "ff64afaa-f956-45f6-b851-632dbba9855a",
+    "payload": "{\"uid\":\"ceiling-test-1779891187878\",\"rot\":1,\"createdAt\":1779891187890}",
+    "uid": "ceiling-test-1779891187878",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "d7e3be63-066e-4e60-a2c6-25d5863e775d",
+    "payload": "{\"uid\":\"ceiling-test-1779891187878\",\"rot\":1,\"createdAt\":1779891187892}",
+    "uid": "ceiling-test-1779891187878",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "1d36bdf1-af93-4458-b581-3ef7dda2d505",
+    "payload": "{\"uid\":\"ceiling-test-1779891187878\",\"rot\":1,\"createdAt\":1779891187893}",
+    "uid": "ceiling-test-1779891187878",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "41fdb3ba-04e6-4024-9b03-0a5eb829cf70",
+    "payload": "{\"uid\":\"ceiling-test-1779891187878\",\"rot\":1,\"createdAt\":1779891187896}",
+    "uid": "ceiling-test-1779891187878",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "913a0e0f-adaa-4d7f-baab-0f357d0dcc56",
+    "payload": "{\"uid\":\"ceiling-test-1779891187878\",\"rot\":1,\"createdAt\":1779891187897}",
+    "uid": "ceiling-test-1779891187878",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3b6cc58c-89d9-44b8-8ffd-8095cf6e1106",
+    "payload": "{\"uid\":\"ceiling-test-1779891187878\",\"rot\":1,\"createdAt\":1779891187899}",
+    "uid": "ceiling-test-1779891187878",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3d8bd926-c4d1-4e0c-ab41-5c4680da6b3b",
+    "payload": "{\"uid\":\"ceiling-test-1779891187878\",\"rot\":1,\"createdAt\":1779891187901}",
+    "uid": "ceiling-test-1779891187878",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "d1ec8fcf-8f35-4f71-b37d-d3b808604ab1",
+    "payload": "{\"uid\":\"ceiling-test-1779891187878\",\"rot\":1,\"createdAt\":1779891187907}",
+    "uid": "ceiling-test-1779891187878",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "06019d84-8a6a-4c17-8e9b-280e1a05d8bb",
+    "payload": "{\"uid\":\"revokeall-test-1779891187912\",\"rot\":1,\"createdAt\":1779891187912,\"revokedAt\":1779891187918}",
+    "uid": "revokeall-test-1779891187912",
+    "revokedAt": 1779891187918
+  },
+  {
+    "sessionId": "af7c3dc3-a99d-48e0-b106-cdb75c2c23f5",
+    "payload": "{\"uid\":\"revokeall-test-1779891187912\",\"rot\":1,\"createdAt\":1779891187915,\"revokedAt\":1779891187919}",
+    "uid": "revokeall-test-1779891187912",
+    "revokedAt": 1779891187919
+  },
+  {
+    "sessionId": "b1471285-bb35-4ecc-ae60-c93f1664cdba",
+    "payload": "{\"uid\":\"revokeall-test-1779891187912\",\"rot\":1,\"createdAt\":1779891187916,\"revokedAt\":1779891187919}",
+    "uid": "revokeall-test-1779891187912",
+    "revokedAt": 1779891187919
+  },
+  {
+    "sessionId": "f798811a-3565-4b7a-a21d-339c535352a9",
+    "payload": "{\"uid\":\"list-test-1779891193165\",\"rot\":1,\"createdAt\":1779891193167}",
+    "uid": "list-test-1779891193165",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "046e51f3-99d8-442f-93d6-b88861a96d34",
+    "payload": "{\"uid\":\"list-test-1779891193165\",\"rot\":1,\"createdAt\":1779891193173}",
+    "uid": "list-test-1779891193165",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "0375180a-8fa1-4fcd-83d4-860c0f3dbe1f",
+    "payload": "{\"uid\":\"alice_1779891193696_1l62wu\",\"rot\":1,\"createdAt\":1779891193882}",
+    "uid": "alice_1779891193696_1l62wu",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "5d0b97c7-6260-4af8-bca3-6ba68beca8e1",
+    "payload": "{\"uid\":\"revoke-test-1779891193985\",\"rot\":1,\"createdAt\":1779891193986,\"revokedAt\":1779891194005}",
+    "uid": "revoke-test-1779891193985",
+    "revokedAt": 1779891194005
+  },
+  {
+    "sessionId": "43b8f306-496a-46bc-9391-48d4770b8640",
+    "payload": "{\"uid\":\"ceiling-test-1779891194053\",\"rot\":1,\"createdAt\":1779891194075}",
+    "uid": "ceiling-test-1779891194053",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "df2ce50d-2ffe-4dbc-8282-d616119e3ffe",
+    "payload": "{\"uid\":\"ceiling-test-1779891194053\",\"rot\":1,\"createdAt\":1779891194077}",
+    "uid": "ceiling-test-1779891194053",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "c546e7a0-5bce-4a3b-abf3-86a688ce729c",
+    "payload": "{\"uid\":\"ceiling-test-1779891194053\",\"rot\":1,\"createdAt\":1779891194079}",
+    "uid": "ceiling-test-1779891194053",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "d6716035-420e-4e62-962b-ddfb32646246",
+    "payload": "{\"uid\":\"ceiling-test-1779891194053\",\"rot\":1,\"createdAt\":1779891194081}",
+    "uid": "ceiling-test-1779891194053",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3d62589a-0331-4b4c-8f83-3d2c2e8f8deb",
+    "payload": "{\"uid\":\"ceiling-test-1779891194053\",\"rot\":1,\"createdAt\":1779891194083}",
+    "uid": "ceiling-test-1779891194053",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "9b9a7f03-062c-4774-805b-b34e39ddc642",
+    "payload": "{\"uid\":\"ceiling-test-1779891194053\",\"rot\":1,\"createdAt\":1779891194085}",
+    "uid": "ceiling-test-1779891194053",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "4ac7c672-388e-40a0-a12d-c5f840035352",
+    "payload": "{\"uid\":\"ceiling-test-1779891194053\",\"rot\":1,\"createdAt\":1779891194087}",
+    "uid": "ceiling-test-1779891194053",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "56c1def3-aed8-4a40-9e7f-c8ff279b018b",
+    "payload": "{\"uid\":\"ceiling-test-1779891194053\",\"rot\":1,\"createdAt\":1779891194089}",
+    "uid": "ceiling-test-1779891194053",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "9ceaef1b-a3c0-4139-8c37-398ae69da6ac",
+    "payload": "{\"uid\":\"ceiling-test-1779891194053\",\"rot\":1,\"createdAt\":1779891194091}",
+    "uid": "ceiling-test-1779891194053",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "c25acd6e-2189-4329-a189-c594e6c44ff0",
+    "payload": "{\"uid\":\"ceiling-test-1779891194053\",\"rot\":1,\"createdAt\":1779891194096}",
+    "uid": "ceiling-test-1779891194053",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "031ce9cf-2273-487b-a994-c5aa4062fa4b",
+    "payload": "{\"uid\":\"revokeall-test-1779891194102\",\"rot\":1,\"createdAt\":1779891194102,\"revokedAt\":1779891194108}",
+    "uid": "revokeall-test-1779891194102",
+    "revokedAt": 1779891194108
+  },
+  {
+    "sessionId": "3263495b-71cc-4319-9a50-c96d7988682a",
+    "payload": "{\"uid\":\"revokeall-test-1779891194102\",\"rot\":1,\"createdAt\":1779891194104,\"revokedAt\":1779891194108}",
+    "uid": "revokeall-test-1779891194102",
+    "revokedAt": 1779891194108
+  },
+  {
+    "sessionId": "a921efe8-e9e3-467a-a4b6-99c1ab0b7f72",
+    "payload": "{\"uid\":\"revokeall-test-1779891194102\",\"rot\":1,\"createdAt\":1779891194106,\"revokedAt\":1779891194108}",
+    "uid": "revokeall-test-1779891194102",
+    "revokedAt": 1779891194108
+  },
+  {
+    "sessionId": "ce00aeec-5def-4f45-9a61-5d41e0df92d2",
+    "payload": "{\"uid\":\"list-test-1779891201010\",\"rot\":1,\"createdAt\":1779891201012}",
+    "uid": "list-test-1779891201010",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "4d0027fc-8c34-4e9c-abdf-c445c0bab191",
+    "payload": "{\"uid\":\"list-test-1779891201010\",\"rot\":1,\"createdAt\":1779891201020}",
+    "uid": "list-test-1779891201010",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "4f0a2458-a91a-423a-8897-ffeea6e78513",
+    "payload": "{\"uid\":\"alice_1779891201525_l2uhvi\",\"rot\":1,\"createdAt\":1779891201709}",
+    "uid": "alice_1779891201525_l2uhvi",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "38a8860b-bbc2-414a-b2ae-0ecb6b13273f",
+    "payload": "{\"uid\":\"revoke-test-1779891201809\",\"rot\":1,\"createdAt\":1779891201809,\"revokedAt\":1779891201828}",
+    "uid": "revoke-test-1779891201809",
+    "revokedAt": 1779891201828
+  },
+  {
+    "sessionId": "ba4bef35-daf1-47fb-8226-5ae0c1a202de",
+    "payload": "{\"uid\":\"ceiling-test-1779891201877\",\"rot\":1,\"createdAt\":1779891201897}",
+    "uid": "ceiling-test-1779891201877",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "153eca19-dc8b-4cc8-ade7-ecb5f4f404a6",
+    "payload": "{\"uid\":\"ceiling-test-1779891201877\",\"rot\":1,\"createdAt\":1779891201899}",
+    "uid": "ceiling-test-1779891201877",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "e8b08683-2abe-4fc9-8e06-325730d310f5",
+    "payload": "{\"uid\":\"ceiling-test-1779891201877\",\"rot\":1,\"createdAt\":1779891201901}",
+    "uid": "ceiling-test-1779891201877",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "731679c7-77ee-43bd-8f70-ee4f29354bfc",
+    "payload": "{\"uid\":\"ceiling-test-1779891201877\",\"rot\":1,\"createdAt\":1779891201903}",
+    "uid": "ceiling-test-1779891201877",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "feda1432-93d8-4e28-a6d7-0ca75613d563",
+    "payload": "{\"uid\":\"ceiling-test-1779891201877\",\"rot\":1,\"createdAt\":1779891201905}",
+    "uid": "ceiling-test-1779891201877",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "e930bb40-8973-4e4e-8d0e-65de4fe30d3e",
+    "payload": "{\"uid\":\"ceiling-test-1779891201877\",\"rot\":1,\"createdAt\":1779891201907}",
+    "uid": "ceiling-test-1779891201877",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "6575ad47-922f-4a58-abd5-efc3ab12a331",
+    "payload": "{\"uid\":\"ceiling-test-1779891201877\",\"rot\":1,\"createdAt\":1779891201909}",
+    "uid": "ceiling-test-1779891201877",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "6c3bd9ac-7139-4fec-ad1a-a6d9498bfe01",
+    "payload": "{\"uid\":\"ceiling-test-1779891201877\",\"rot\":1,\"createdAt\":1779891201911}",
+    "uid": "ceiling-test-1779891201877",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "f2ae1ae6-5c65-4f51-9202-adfe0a3bbbe1",
+    "payload": "{\"uid\":\"ceiling-test-1779891201877\",\"rot\":1,\"createdAt\":1779891201913}",
+    "uid": "ceiling-test-1779891201877",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "ba8cd0f3-e9c5-4e7b-942b-508aebd414f7",
+    "payload": "{\"uid\":\"ceiling-test-1779891201877\",\"rot\":1,\"createdAt\":1779891201918}",
+    "uid": "ceiling-test-1779891201877",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "838fab46-f927-4a57-afe4-4043bbe38ae9",
+    "payload": "{\"uid\":\"revokeall-test-1779891201923\",\"rot\":1,\"createdAt\":1779891201923,\"revokedAt\":1779891201929}",
+    "uid": "revokeall-test-1779891201923",
+    "revokedAt": 1779891201929
+  },
+  {
+    "sessionId": "bde2de1b-411b-4506-bd93-0de648ef9f08",
+    "payload": "{\"uid\":\"revokeall-test-1779891201923\",\"rot\":1,\"createdAt\":1779891201925,\"revokedAt\":1779891201930}",
+    "uid": "revokeall-test-1779891201923",
+    "revokedAt": 1779891201930
+  },
+  {
+    "sessionId": "e7fce641-da4f-494d-9112-b83fddc1449c",
+    "payload": "{\"uid\":\"revokeall-test-1779891201923\",\"rot\":1,\"createdAt\":1779891201927,\"revokedAt\":1779891201930}",
+    "uid": "revokeall-test-1779891201923",
+    "revokedAt": 1779891201930
+  },
+  {
+    "sessionId": "e548fbda-6583-4f65-aeb8-fcf36779dee6",
+    "payload": "{\"uid\":\"list-test-1779891316196\",\"rot\":1,\"createdAt\":1779891316198}",
+    "uid": "list-test-1779891316196",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "36d62b97-3dd1-43df-b6fe-e73e417ebfe0",
+    "payload": "{\"uid\":\"list-test-1779891316196\",\"rot\":1,\"createdAt\":1779891316207}",
+    "uid": "list-test-1779891316196",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "1002f317-baf1-4898-bf45-d000ab55dc1d",
+    "payload": "{\"uid\":\"alice_1779891316706_rd6tw8\",\"rot\":1,\"createdAt\":1779891316888}",
+    "uid": "alice_1779891316706_rd6tw8",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3684c893-85a9-4622-895e-45b8d1c64494",
+    "payload": "{\"uid\":\"revoke-test-1779891316991\",\"rot\":1,\"createdAt\":1779891316992,\"revokedAt\":1779891317010}",
+    "uid": "revoke-test-1779891316991",
+    "revokedAt": 1779891317010
+  },
+  {
+    "sessionId": "4c708f9d-1357-43ed-ab6a-3cea532c9500",
+    "payload": "{\"uid\":\"ceiling-test-1779891317058\",\"rot\":1,\"createdAt\":1779891317070}",
+    "uid": "ceiling-test-1779891317058",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "56c15f5f-1cdb-42a3-8b7e-3064c48097f1",
+    "payload": "{\"uid\":\"ceiling-test-1779891317058\",\"rot\":1,\"createdAt\":1779891317072}",
+    "uid": "ceiling-test-1779891317058",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "dcac1b7d-5dfb-4790-8967-5a01ce938421",
+    "payload": "{\"uid\":\"ceiling-test-1779891317058\",\"rot\":1,\"createdAt\":1779891317074}",
+    "uid": "ceiling-test-1779891317058",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "96f3fcd8-054a-4f02-89a9-107ac098b8f0",
+    "payload": "{\"uid\":\"ceiling-test-1779891317058\",\"rot\":1,\"createdAt\":1779891317076}",
+    "uid": "ceiling-test-1779891317058",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "e235627a-7cfa-42d6-abf4-7af0568ef09e",
+    "payload": "{\"uid\":\"ceiling-test-1779891317058\",\"rot\":1,\"createdAt\":1779891317078}",
+    "uid": "ceiling-test-1779891317058",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "33a3ce2c-973f-48cb-b994-7f0e1a65f58d",
+    "payload": "{\"uid\":\"ceiling-test-1779891317058\",\"rot\":1,\"createdAt\":1779891317079}",
+    "uid": "ceiling-test-1779891317058",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3650c105-4758-4af1-8bcc-22dbc4bbf58f",
+    "payload": "{\"uid\":\"ceiling-test-1779891317058\",\"rot\":1,\"createdAt\":1779891317082}",
+    "uid": "ceiling-test-1779891317058",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "ed546a6f-9e16-4977-812f-e18bdf318661",
+    "payload": "{\"uid\":\"ceiling-test-1779891317058\",\"rot\":1,\"createdAt\":1779891317084}",
+    "uid": "ceiling-test-1779891317058",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "0a0ea1fb-1083-4e26-8bc2-1755715bca45",
+    "payload": "{\"uid\":\"ceiling-test-1779891317058\",\"rot\":1,\"createdAt\":1779891317086}",
+    "uid": "ceiling-test-1779891317058",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "a34e2987-0a83-4899-afae-f6fecac4e291",
+    "payload": "{\"uid\":\"ceiling-test-1779891317058\",\"rot\":1,\"createdAt\":1779891317091}",
+    "uid": "ceiling-test-1779891317058",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "3e428893-cbba-420d-b509-fd8256bfccf8",
+    "payload": "{\"uid\":\"revokeall-test-1779891317096\",\"rot\":1,\"createdAt\":1779891317096,\"revokedAt\":1779891317102}",
+    "uid": "revokeall-test-1779891317096",
+    "revokedAt": 1779891317102
+  },
+  {
+    "sessionId": "c1bf98f4-dc80-4a5b-8a61-183157ad41ec",
+    "payload": "{\"uid\":\"revokeall-test-1779891317096\",\"rot\":1,\"createdAt\":1779891317098,\"revokedAt\":1779891317102}",
+    "uid": "revokeall-test-1779891317096",
+    "revokedAt": 1779891317102
+  },
+  {
+    "sessionId": "621f164f-1c37-4eed-8b94-eda056b21949",
+    "payload": "{\"uid\":\"revokeall-test-1779891317096\",\"rot\":1,\"createdAt\":1779891317100,\"revokedAt\":1779891317103}",
+    "uid": "revokeall-test-1779891317096",
+    "revokedAt": 1779891317103
+  },
+  {
+    "sessionId": "fa9a5105-39f3-4a8d-84bf-1bf79127d476",
+    "payload": "{\"uid\":\"list-test-1779891327215\",\"rot\":1,\"createdAt\":1779891327217}",
+    "uid": "list-test-1779891327215",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "79c0773d-eef3-48ba-bf11-33f1f8c28e13",
+    "payload": "{\"uid\":\"list-test-1779891327215\",\"rot\":1,\"createdAt\":1779891327225}",
+    "uid": "list-test-1779891327215",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "1f96f747-4937-43be-9fcf-20b404c49bfb",
+    "payload": "{\"uid\":\"alice_1779891327726_3j0p5k\",\"rot\":1,\"createdAt\":1779891327912}",
+    "uid": "alice_1779891327726_3j0p5k",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "cfc946ae-9027-46ea-bf77-dd673187250d",
+    "payload": "{\"uid\":\"revoke-test-1779891328038\",\"rot\":1,\"createdAt\":1779891328038,\"revokedAt\":1779891328056}",
+    "uid": "revoke-test-1779891328038",
+    "revokedAt": 1779891328056
+  },
+  {
+    "sessionId": "ce3c60c3-375e-470f-a9ce-f063a46e0f0e",
+    "payload": "{\"uid\":\"ceiling-test-1779891328105\",\"rot\":1,\"createdAt\":1779891328119}",
+    "uid": "ceiling-test-1779891328105",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "c463a618-607a-4f8b-8459-97b927c08482",
+    "payload": "{\"uid\":\"ceiling-test-1779891328105\",\"rot\":1,\"createdAt\":1779891328121}",
+    "uid": "ceiling-test-1779891328105",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "9936cdf2-400e-4b07-b912-5232a922351e",
+    "payload": "{\"uid\":\"ceiling-test-1779891328105\",\"rot\":1,\"createdAt\":1779891328123}",
+    "uid": "ceiling-test-1779891328105",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "43421ee2-f79c-412d-9c4a-574fb7ea36a5",
+    "payload": "{\"uid\":\"ceiling-test-1779891328105\",\"rot\":1,\"createdAt\":1779891328125}",
+    "uid": "ceiling-test-1779891328105",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "31b1dac2-b0d3-4e91-a37a-e3bba20d206f",
+    "payload": "{\"uid\":\"ceiling-test-1779891328105\",\"rot\":1,\"createdAt\":1779891328126}",
+    "uid": "ceiling-test-1779891328105",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "29f015b3-e5ff-4a64-b2f8-7d0d692b0971",
+    "payload": "{\"uid\":\"ceiling-test-1779891328105\",\"rot\":1,\"createdAt\":1779891328128}",
+    "uid": "ceiling-test-1779891328105",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "0baffc5c-0224-4b67-835d-76a8a13fe9ec",
+    "payload": "{\"uid\":\"ceiling-test-1779891328105\",\"rot\":1,\"createdAt\":1779891328130}",
+    "uid": "ceiling-test-1779891328105",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "7c41b672-5690-4cf5-b45f-778c0a9cd8b3",
+    "payload": "{\"uid\":\"ceiling-test-1779891328105\",\"rot\":1,\"createdAt\":1779891328132}",
+    "uid": "ceiling-test-1779891328105",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "de31259f-0243-44b2-90ad-e2113b5ed72b",
+    "payload": "{\"uid\":\"ceiling-test-1779891328105\",\"rot\":1,\"createdAt\":1779891328134}",
+    "uid": "ceiling-test-1779891328105",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "7fcf5d0e-fae5-4dd9-9bb0-bee9c501b836",
+    "payload": "{\"uid\":\"ceiling-test-1779891328105\",\"rot\":1,\"createdAt\":1779891328140}",
+    "uid": "ceiling-test-1779891328105",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "bff1ca1d-d7d1-4ee5-b50e-9b1a2799e37c",
+    "payload": "{\"uid\":\"revokeall-test-1779891328144\",\"rot\":1,\"createdAt\":1779891328145,\"revokedAt\":1779891328151}",
+    "uid": "revokeall-test-1779891328144",
+    "revokedAt": 1779891328151
+  },
+  {
+    "sessionId": "12ffd311-4812-4f77-855b-388da2f2d73d",
+    "payload": "{\"uid\":\"revokeall-test-1779891328144\",\"rot\":1,\"createdAt\":1779891328147,\"revokedAt\":1779891328151}",
+    "uid": "revokeall-test-1779891328144",
+    "revokedAt": 1779891328151
+  },
+  {
+    "sessionId": "7ced08bf-93ec-46af-b020-d15cb895b992",
+    "payload": "{\"uid\":\"revokeall-test-1779891328144\",\"rot\":1,\"createdAt\":1779891328149,\"revokedAt\":1779891328151}",
+    "uid": "revokeall-test-1779891328144",
+    "revokedAt": 1779891328151
+  },
+  {
+    "sessionId": "3dc3c47a-848a-4eee-b037-7ff8fd0008c2",
+    "payload": "{\"uid\":\"list-test-1779891439769\",\"rot\":1,\"createdAt\":1779891439771}",
+    "uid": "list-test-1779891439769",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "a6c9ee87-31e6-4a90-8610-cdecf4dca731",
+    "payload": "{\"uid\":\"list-test-1779891439769\",\"rot\":1,\"createdAt\":1779891439783}",
+    "uid": "list-test-1779891439769",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "b7d33ab4-2eeb-493e-a278-7d85c935e19d",
+    "payload": "{\"uid\":\"list-test-1779891447773\",\"rot\":1,\"createdAt\":1779891447775}",
+    "uid": "list-test-1779891447773",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "731bbda3-2e07-4493-82d7-05a11cfd012e",
+    "payload": "{\"uid\":\"list-test-1779891447773\",\"rot\":1,\"createdAt\":1779891447783}",
+    "uid": "list-test-1779891447773",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "a442a962-66ea-452e-8eab-be1561b932fe",
+    "payload": "{\"uid\":\"list-test-1779891452588\",\"rot\":1,\"createdAt\":1779891452590}",
+    "uid": "list-test-1779891452588",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "fea1b674-54b8-4eac-b9e9-06200f9f64ee",
+    "payload": "{\"uid\":\"list-test-1779891452588\",\"rot\":1,\"createdAt\":1779891452597}",
+    "uid": "list-test-1779891452588",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "48f82d99-2049-4ea4-8026-424706766781",
+    "payload": "{\"uid\":\"alice_1779891453100_qp7dqo\",\"rot\":1,\"createdAt\":1779891453283}",
+    "uid": "alice_1779891453100_qp7dqo",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "320090bd-b811-4128-967e-dd5eba337af8",
+    "payload": "{\"uid\":\"revoke-test-1779891453402\",\"rot\":1,\"createdAt\":1779891453403,\"revokedAt\":1779891453420}",
+    "uid": "revoke-test-1779891453402",
+    "revokedAt": 1779891453420
+  },
+  {
+    "sessionId": "4927b940-12b8-41f6-9576-8b32444e6064",
+    "payload": "{\"uid\":\"ceiling-test-1779891453467\",\"rot\":1,\"createdAt\":1779891453487}",
+    "uid": "ceiling-test-1779891453467",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "2af8a5ae-8b5b-4172-a966-8aac0df95d09",
+    "payload": "{\"uid\":\"ceiling-test-1779891453467\",\"rot\":1,\"createdAt\":1779891453489}",
+    "uid": "ceiling-test-1779891453467",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "c1eff996-aa8d-44ee-88ce-c9e687c3417e",
+    "payload": "{\"uid\":\"ceiling-test-1779891453467\",\"rot\":1,\"createdAt\":1779891453491}",
+    "uid": "ceiling-test-1779891453467",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "ae63f842-37ec-4670-bf38-b324d0cd5d9c",
+    "payload": "{\"uid\":\"ceiling-test-1779891453467\",\"rot\":1,\"createdAt\":1779891453493}",
+    "uid": "ceiling-test-1779891453467",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "7a83364f-04af-46d4-a73b-b987d02bb428",
+    "payload": "{\"uid\":\"ceiling-test-1779891453467\",\"rot\":1,\"createdAt\":1779891453495}",
+    "uid": "ceiling-test-1779891453467",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "e707cf4b-c5c9-468e-8f98-7177936de3c2",
+    "payload": "{\"uid\":\"ceiling-test-1779891453467\",\"rot\":1,\"createdAt\":1779891453497}",
+    "uid": "ceiling-test-1779891453467",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "6ef881e9-f191-4f9c-a189-cf7a8da1649e",
+    "payload": "{\"uid\":\"ceiling-test-1779891453467\",\"rot\":1,\"createdAt\":1779891453499}",
+    "uid": "ceiling-test-1779891453467",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "47821e63-7abe-490f-bbc1-d0c409c427b3",
+    "payload": "{\"uid\":\"ceiling-test-1779891453467\",\"rot\":1,\"createdAt\":1779891453501}",
+    "uid": "ceiling-test-1779891453467",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "84a73103-e850-44dd-bc92-c0407f3af2d9",
+    "payload": "{\"uid\":\"ceiling-test-1779891453467\",\"rot\":1,\"createdAt\":1779891453503}",
+    "uid": "ceiling-test-1779891453467",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "b7d5d8c8-609e-4143-bbff-6e10c428370c",
+    "payload": "{\"uid\":\"ceiling-test-1779891453467\",\"rot\":1,\"createdAt\":1779891453508}",
+    "uid": "ceiling-test-1779891453467",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "8ec6b581-1802-45d3-80d2-04610b56c7b5",
+    "payload": "{\"uid\":\"revokeall-test-1779891453514\",\"rot\":1,\"createdAt\":1779891453514,\"revokedAt\":1779891453521}",
+    "uid": "revokeall-test-1779891453514",
+    "revokedAt": 1779891453521
+  },
+  {
+    "sessionId": "1d7433b1-2f2e-4336-baf7-2bb761eb4189",
+    "payload": "{\"uid\":\"revokeall-test-1779891453514\",\"rot\":1,\"createdAt\":1779891453516,\"revokedAt\":1779891453521}",
+    "uid": "revokeall-test-1779891453514",
+    "revokedAt": 1779891453521
+  },
+  {
+    "sessionId": "052ad2ca-ba37-4b40-bb23-0f38087808a9",
+    "payload": "{\"uid\":\"revokeall-test-1779891453514\",\"rot\":1,\"createdAt\":1779891453518,\"revokedAt\":1779891453521}",
+    "uid": "revokeall-test-1779891453514",
+    "revokedAt": 1779891453521
+  },
+  {
+    "sessionId": "e63506d5-fdcf-43e1-a40c-f365721a8cfb",
+    "payload": "{\"uid\":\"list-test-1779891579329\",\"rot\":1,\"createdAt\":1779891579331}",
+    "uid": "list-test-1779891579329",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "861ed5b3-a3e8-4f81-be53-98586dad5874",
+    "payload": "{\"uid\":\"list-test-1779891579329\",\"rot\":1,\"createdAt\":1779891579352}",
+    "uid": "list-test-1779891579329",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "ccda0500-696c-4766-88bf-dd39f0a49b06",
+    "payload": "{\"uid\":\"alice_1779891579853_45jjmy\",\"rot\":1,\"createdAt\":1779891580044}",
+    "uid": "alice_1779891579853_45jjmy",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "e76d63c5-e9df-42d1-a51b-c37ae461ac76",
+    "payload": "{\"uid\":\"revoke-test-1779891580149\",\"rot\":1,\"createdAt\":1779891580150,\"revokedAt\":1779891580167}",
+    "uid": "revoke-test-1779891580149",
+    "revokedAt": 1779891580167
+  },
+  {
+    "sessionId": "4902299b-4421-49c0-b981-8097d3960610",
+    "payload": "{\"uid\":\"ceiling-test-1779891580217\",\"rot\":1,\"createdAt\":1779891580230}",
+    "uid": "ceiling-test-1779891580217",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "169241bf-9543-4d5d-93fc-515a9e51d869",
+    "payload": "{\"uid\":\"ceiling-test-1779891580217\",\"rot\":1,\"createdAt\":1779891580232}",
+    "uid": "ceiling-test-1779891580217",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "cd073ebf-9560-48ab-af44-3c7f437c8b16",
+    "payload": "{\"uid\":\"ceiling-test-1779891580217\",\"rot\":1,\"createdAt\":1779891580234}",
+    "uid": "ceiling-test-1779891580217",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "5eded8a5-4bca-4bb3-acd3-cbd10aaf12da",
+    "payload": "{\"uid\":\"ceiling-test-1779891580217\",\"rot\":1,\"createdAt\":1779891580236}",
+    "uid": "ceiling-test-1779891580217",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "1ec38b67-5eb8-4238-8c0c-7e7c5c9ecec1",
+    "payload": "{\"uid\":\"ceiling-test-1779891580217\",\"rot\":1,\"createdAt\":1779891580238}",
+    "uid": "ceiling-test-1779891580217",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "00a4bcde-01da-4688-948d-7d5b6e97d7a6",
+    "payload": "{\"uid\":\"ceiling-test-1779891580217\",\"rot\":1,\"createdAt\":1779891580240}",
+    "uid": "ceiling-test-1779891580217",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "c1e9ee1b-dc22-46b7-9c4e-e8453c50fa98",
+    "payload": "{\"uid\":\"ceiling-test-1779891580217\",\"rot\":1,\"createdAt\":1779891580242}",
+    "uid": "ceiling-test-1779891580217",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "da4db565-3ea5-42bd-9fa7-c5f0e6f7f897",
+    "payload": "{\"uid\":\"ceiling-test-1779891580217\",\"rot\":1,\"createdAt\":1779891580244}",
+    "uid": "ceiling-test-1779891580217",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "69324e07-070f-47ba-9cb9-40af641308a8",
+    "payload": "{\"uid\":\"ceiling-test-1779891580217\",\"rot\":1,\"createdAt\":1779891580246}",
+    "uid": "ceiling-test-1779891580217",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "f3d4ef87-d187-41f9-992b-bbf1878ed820",
+    "payload": "{\"uid\":\"ceiling-test-1779891580217\",\"rot\":1,\"createdAt\":1779891580253}",
+    "uid": "ceiling-test-1779891580217",
+    "revokedAt": null
+  },
+  {
+    "sessionId": "e818ef1c-0194-410a-a2d7-788e546d0eaa",
+    "payload": "{\"uid\":\"revokeall-test-1779891580257\",\"rot\":1,\"createdAt\":1779891580258,\"revokedAt\":1779891580264}",
+    "uid": "revokeall-test-1779891580257",
+    "revokedAt": 1779891580264
+  },
+  {
+    "sessionId": "0f6da47f-9b21-4f3b-bd43-c511453a3434",
+    "payload": "{\"uid\":\"revokeall-test-1779891580257\",\"rot\":1,\"createdAt\":1779891580259,\"revokedAt\":1779891580264}",
+    "uid": "revokeall-test-1779891580257",
+    "revokedAt": 1779891580264
+  },
+  {
+    "sessionId": "c2764d94-4aff-4b77-9287-7a2b70a957fa",
+    "payload": "{\"uid\":\"revokeall-test-1779891580257\",\"rot\":1,\"createdAt\":1779891580262,\"revokedAt\":1779891580264}",
+    "uid": "revokeall-test-1779891580257",
+    "revokedAt": 1779891580264
+  }
+]
