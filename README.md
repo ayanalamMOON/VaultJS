@@ -243,6 +243,39 @@ npm test
 npm run start:auth
 ```
 
+### Metrics & Monitoring
+
+Prometheus metrics are supported via `prom-client` (recommended). Install in production:
+
+```bash
+npm install prom-client
+```
+
+The server exposes `/metrics`. When `prom-client` is present the server returns the Prometheus registry. Otherwise it falls back to persisted DB counters.
+
+Set `METRICS_AUTH_TOKEN` to protect the `/metrics` endpoint and pass it as `Authorization: Bearer <token>` or `x-metrics-token` header when scraping.
+
+### Cleanup / CronJob
+
+For production, run session cleanup as an external job (recommended) instead of relying solely on the in-process scheduler. A Kubernetes CronJob manifest is provided at `infra/k8s/cleanup-sessions-cronjob.yaml`. Update the `image` to your registry and configure any required volumes/secrets.
+
+Alternatively run manually:
+
+```bash
+node scripts/cleanup-sessions.js
+```
+
+### Audit Indexing
+
+Added indexes on the `audits` table (`createdAt` and JSON `type` expression) to speed up audit queries. For very high throughput audit pipelines consider shipping events directly to a log store (Elasticsearch/Opensearch, ClickHouse) and keeping only critical audit references in SQLite.
+
+### Crypto agility / future-proofing
+
+VaultJS already uses `aes-256-gcm` for token envelopes, which is a strong symmetric cipher choice. To make future upgrades safer, the envelope now carries explicit `suite` and `alg` metadata so we can evolve to new or hybrid schemes without breaking validation.
+
+That means the code is prepared for crypto transitions, even if the underlying primitive changes later.
+
+
 > **Security Note:** In production scenarios, never commit your generated `.env`. You must supply `MASTER_SECRET` and `HMAC_KEY` via a secure Hardware Security Module (HSM), AWS KMS, or Hashicorp Vault.
 
 ---

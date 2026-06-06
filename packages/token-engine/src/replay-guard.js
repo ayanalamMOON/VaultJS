@@ -2,6 +2,12 @@
 
 const crypto = require('crypto');
 const { hasSeenRotation, recordRotation } = require('../../../infra/redis/rotation-store');
+let promMetrics = null;
+try {
+    promMetrics = require('../../auth-server/src/prom-metrics');
+} catch (e) {
+    promMetrics = null;
+}
 
 // In-memory JTI store: key -> expiry timestamp (ms)
 const jtiCache = new Map();
@@ -11,21 +17,21 @@ const JTI_EVICT_INTERVAL_MS = 5 * 60 * 1000;
 let evictTimer = null;
 
 function scheduleEviction() {
-  if (evictTimer) return;
-  evictTimer = setInterval(() => {
-    const now = Date.now();
-    for (const [key, expiry] of jtiCache) {
-      if (expiry <= now) jtiCache.delete(key);
-    }
-  }, JTI_EVICT_INTERVAL_MS);
-  // Let the timer be unref'd so it doesn't hold the event loop open in tests
-  if (evictTimer.unref) evictTimer.unref();
+    if (evictTimer) return;
+    evictTimer = setInterval(() => {
+        const now = Date.now();
+        for (const [key, expiry] of jtiCache) {
+            if (expiry <= now) jtiCache.delete(key);
+        }
+    }, JTI_EVICT_INTERVAL_MS);
+    // Let the timer be unref'd so it doesn't hold the event loop open in tests
+    if (evictTimer.unref) evictTimer.unref();
 }
 
 scheduleEviction();
 
 function hashJti(jti) {
-  return crypto.createHash('sha256').update(String(jti)).digest('hex');
+    return crypto.createHash('sha256').update(String(jti)).digest('hex');
 }
 
 /**
@@ -37,9 +43,12 @@ function hashJti(jti) {
  * @param {import('ioredis').Redis|null} redis
  */
 async function assertFreshRotation(sessionId, rotation, redis = null) {
-  const replayed = await hasSeenRotation(sessionId, rotation, redis);
-  if (replayed) throw new Error('replay detected: rotation');
-  await recordRotation(sessionId, rotation, redis);
+    const replayed = await hasSeenRotation(sessionId, rotation, redis);
+    if (replayed) {
+        try { promMetrics?.incReplay('rotation', 1); } catch (e) { }
+        throw new Error('replay detected: rotation');
+    }
+    await recordRotation(sessionId, rotation, redis);
 }
 
 /**
@@ -52,29 +61,33 @@ async function assertFreshRotation(sessionId, rotation, redis = null) {
  * @param {number} ttlMs
  */
 async function assertFreshJti(sessionId, jti, redis = null, ttlMs = 10 * 60 * 1000) {
-  const hash = hashJti(jti);
+    const hash = hashJti(jti);
 
-  if (redis) {
-    const redisKey = `vault:jti:${sessionId}:${hash}`;
-    const ttlSec = Math.ceil(ttlMs / 1000);
-    // SET NX EX is atomic: returns 'OK' if key was absent, null if already exists
-    const result = await redis.set(redisKey, '1', 'EX', ttlSec, 'NX');
-    if (result === null) throw new Error('replay detected: jti');
-    return;
-  }
+    if (redis) {
+        const redisKey = `vault:jti:${sessionId}:${hash}`;
+        const ttlSec = Math.ceil(ttlMs / 1000);
+        // SET NX EX is atomic: returns 'OK' if key was absent, null if already exists
+        const result = await redis.set(redisKey, '1', 'EX', ttlSec, 'NX');
+        if (result === null) {
+            try { promMetrics?.incReplay('jti', 1); } catch (e) { }
+            throw new Error('replay detected: jti');
+        }
+        return;
+    }
 
-  // In-memory fallback
-  const key = `${sessionId}:${hash}`;
-  const existing = jtiCache.get(key);
-  if (existing && existing > Date.now()) {
-    throw new Error('replay detected: jti');
-  }
-  jtiCache.set(key, Date.now() + ttlMs);
+    // In-memory fallback
+    const key = `${sessionId}:${hash}`;
+    const existing = jtiCache.get(key);
+    if (existing && existing > Date.now()) {
+        try { promMetrics?.incReplay('jti', 1); } catch (e) { }
+        throw new Error('replay detected: jti');
+    }
+    jtiCache.set(key, Date.now() + ttlMs);
 }
 
 module.exports = {
-  assertFreshRotation,
-  assertFreshJti,
-  // Exposed for testing only
-  _jtiCache: jtiCache
+    assertFreshRotation,
+    assertFreshJti,
+    // Exposed for testing only
+    _jtiCache: jtiCache
 };

@@ -44,6 +44,14 @@ app.use((req, res, next) => {
 app.use(ipIntel);
 app.use(rateLimiter({ limit: 60, windowMs: 60_000, redis }));
 
+// Prometheus metrics middleware (if prom-client installed)
+try {
+    const promMetrics = require('./prom-metrics');
+    app.use(promMetrics.middleware);
+} catch (e) {
+    /* no-op if prom-client is not installed */
+}
+
 // Remove fingerprinting headers
 app.disable('x-powered-by');
 app.use((_req, res, next) => {
@@ -107,6 +115,41 @@ app.get('/healthz/deep', async (_req, res) => {
     return res.status(ok ? 200 : 503).json(body);
 });
 
+// Metrics endpoint — prefer prom-client when available, otherwise serve DB-backed counters
+app.get('/metrics', async (req, res) => {
+    // Optional auth for metrics endpoint
+    const token = process.env.METRICS_AUTH_TOKEN || '';
+    if (token) {
+        const provided = String(req.headers['x-metrics-token'] || req.headers.authorization || '').trim();
+        const bearer = provided.toLowerCase().startsWith('bearer ') ? provided.slice(7).trim() : provided;
+        if (bearer !== token) return res.status(401).send('unauthorized');
+    }
+
+    // If prom-client is installed, prefer its registry
+    try {
+        // eslint-disable-next-line global-require
+        const prom = require('prom-client');
+        res.setHeader('content-type', prom.register.contentType);
+        const metrics = await prom.register.metrics();
+        return res.send(metrics);
+    } catch (e) {
+        // Fall back to DB-backed counters
+        try {
+            const metricsModule = require('./metrics');
+            const all = await metricsModule.getAll();
+            const lines = [];
+            for (const [k, v] of Object.entries(all)) {
+                const name = k.replace(/[^a-zA-Z0-9_]/g, '_');
+                lines.push(`${name} ${Number(v || 0)}`);
+            }
+            res.setHeader('content-type', 'text/plain; version=0.0.4');
+            return res.send(lines.join('\n') + '\n');
+        } catch (err) {
+            return res.status(500).send('metrics_unavailable');
+        }
+    }
+});
+
 // 404 handler
 app.use((_req, res) => res.status(404).json({ error: 'not found' }));
 
@@ -139,6 +182,19 @@ if (require.main === module) {
 
     process.on('SIGINT', () => shutdown('SIGINT'));
     process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+    // Schedule periodic cleanup job (background worker) if desired
+    try {
+        const { cleanupSessions } = require('../../scripts/cleanup-sessions');
+        const intervalMs = Number(process.env.SESS_CLEANUP_INTERVAL_MS || 6 * 60 * 60 * 1000); // default 6h
+        setInterval(() => {
+            cleanupSessions().catch((err) => console.error('scheduled cleanup failed', err));
+        }, intervalMs).unref && setInterval(() => { }).unref();
+        // Run once at startup after a short delay
+        setTimeout(() => cleanupSessions().catch(() => { }), 5_000);
+    } catch (e) {
+        // cleanupSessions not available — ignore
+    }
 }
 
 module.exports = { app };

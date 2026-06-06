@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vaultjs-cleanup-sessions
+  namespace: default
+spec:
+  schedule: "0 */6 * * *" # every 6 hours
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: cleanup-sessions
+              image: your-registry/vaultjs:latest
+              imagePullPolicy: IfNotPresent
+              command: ["node", "/app/scripts/cleanup-sessions.js"]
+              env:
+                - name: SESS_PURGE_DAYS
+                  value: "30"
+                - name: SESS_PURGE_EXPIRED_ONLY
+                  value: "false"
+          # adjust resources as appropriate for your environment
+          # volumes, secrets, and service account should be configured for your cluster

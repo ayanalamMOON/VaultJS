@@ -80,6 +80,8 @@ async function initSchema(database) {
         CREATE TABLE IF NOT EXISTS sessions (
           sessionId TEXT PRIMARY KEY,
           payload TEXT,
+                    uid TEXT,
+                    revokedAt DATETIME,
           updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
           expiresAt DATETIME
         )
@@ -178,23 +180,45 @@ async function initSchema(database) {
                     if (containmentErr) return reject(containmentErr);
                     database.run('CREATE INDEX IF NOT EXISTS idx_siem_containment_history_batchId ON siem_containment_history(batchId)');
                     database.run('CREATE INDEX IF NOT EXISTS idx_siem_containment_history_createdAt ON siem_containment_history(createdAt DESC)');
+                    database.run('CREATE INDEX IF NOT EXISTS idx_audits_createdAt ON audits(createdAt DESC)');
+                    try {
+                        database.run("CREATE INDEX IF NOT EXISTS idx_audits_event_type ON audits(json_extract(event_data, '$.type'))");
+                    } catch (e) {
+                        // Older SQLite may not support expression indexes — ignore
+                    }
 
                     const ignoreDuplicate = (err) => err && !/duplicate column name/i.test(err.message);
-                    database.run('ALTER TABLE siem_containments ADD COLUMN acknowledgedAt DATETIME', (err) => {
-                        if (ignoreDuplicate(err)) return reject(err);
-                        database.run('ALTER TABLE siem_containments ADD COLUMN acknowledgedBy TEXT', (err2) => {
-                            if (ignoreDuplicate(err2)) return reject(err2);
-                            database.run('ALTER TABLE siem_containments ADD COLUMN resumedAt DATETIME', (err3) => {
-                                if (ignoreDuplicate(err3)) return reject(err3);
-                                database.run('ALTER TABLE siem_containments ADD COLUMN resumedBy TEXT', (err4) => {
-                                    if (ignoreDuplicate(err4)) return reject(err4);
-                                    database.run('ALTER TABLE siem_containments ADD COLUMN resolvedBy TEXT', (err5) => {
-                                        if (ignoreDuplicate(err5)) return reject(err5);
-                                        database.run('ALTER TABLE siem_containments ADD COLUMN lastStatusAt DATETIME', (err6) => {
-                                            if (ignoreDuplicate(err6)) return reject(err6);
-                                            database.run('ALTER TABLE siem_containments ADD COLUMN notes TEXT', (err7) => {
-                                                if (ignoreDuplicate(err7)) return reject(err7);
-                                                resolve();
+
+                    // Ensure sessions table has uid and revokedAt columns for efficient queries
+                    database.run('ALTER TABLE sessions ADD COLUMN uid TEXT', (sessErr) => {
+                        if (ignoreDuplicate(sessErr)) return reject(sessErr);
+                        database.run('ALTER TABLE sessions ADD COLUMN revokedAt DATETIME', (sessErr2) => {
+                            if (ignoreDuplicate(sessErr2)) return reject(sessErr2);
+                            database.run('CREATE INDEX IF NOT EXISTS idx_sessions_uid ON sessions(uid)', (idxErr) => {
+                                if (idxErr) return reject(idxErr);
+                                database.run('CREATE INDEX IF NOT EXISTS idx_sessions_revokedAt ON sessions(revokedAt)', (idxErr2) => {
+                                    if (idxErr2) return reject(idxErr2);
+
+                                    // Continue with existing siem_containments migrations
+                                    database.run('ALTER TABLE siem_containments ADD COLUMN acknowledgedAt DATETIME', (err) => {
+                                        if (ignoreDuplicate(err)) return reject(err);
+                                        database.run('ALTER TABLE siem_containments ADD COLUMN acknowledgedBy TEXT', (err2) => {
+                                            if (ignoreDuplicate(err2)) return reject(err2);
+                                            database.run('ALTER TABLE siem_containments ADD COLUMN resumedAt DATETIME', (err3) => {
+                                                if (ignoreDuplicate(err3)) return reject(err3);
+                                                database.run('ALTER TABLE siem_containments ADD COLUMN resumedBy TEXT', (err4) => {
+                                                    if (ignoreDuplicate(err4)) return reject(err4);
+                                                    database.run('ALTER TABLE siem_containments ADD COLUMN resolvedBy TEXT', (err5) => {
+                                                        if (ignoreDuplicate(err5)) return reject(err5);
+                                                        database.run('ALTER TABLE siem_containments ADD COLUMN lastStatusAt DATETIME', (err6) => {
+                                                            if (ignoreDuplicate(err6)) return reject(err6);
+                                                            database.run('ALTER TABLE siem_containments ADD COLUMN notes TEXT', (err7) => {
+                                                                if (ignoreDuplicate(err7)) return reject(err7);
+                                                                resolve();
+                                                            });
+                                                        });
+                                                    });
+                                                });
                                             });
                                         });
                                     });

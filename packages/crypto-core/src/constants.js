@@ -34,6 +34,8 @@ module.exports = {
     // ── Token envelope cryptography (Depth dimension) ────────────────────────
     HMAC_ALGO: 'sha256',
     AES_ALGO: 'aes-256-gcm',
+    /** Crypto suite identifier for token envelopes. */
+    TOKEN_CRYPTO_SUITE: 'vault-hybrid-256-gcm-v1',
     /** AES-GCM recommended IV length (NIST SP 800-38D). */
     AES_IV_BYTES: 12,
     /** Random salt length for password hashing (scrypt fallback). */

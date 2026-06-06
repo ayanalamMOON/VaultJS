@@ -12,6 +12,12 @@ const {
     TOKEN_TTL_SECONDS
 } = require('../../crypto-core/src');
 const { parseUserAgent, evaluateContext } = require('./security-context');
+let promMetrics = null;
+try {
+    promMetrics = require('../../auth-server/src/prom-metrics');
+} catch (e) {
+    // optional
+}
 
 /**
  * Produce a 24-char hex summary of the request context (ua + ip + tz + webgl).
@@ -77,6 +83,7 @@ function issueToken({ uid, sessionId, context, previousRotation = 0, masterSecre
     if (!masterSecret) throw new Error('masterSecret is required');
     if (!hmacKey) throw new Error('hmacKey is required');
 
+    const started = Date.now();
     const nowSec = Math.floor(now / 1000);
     const epoch = currentEpoch(nowSec);
     const fp = buildFingerprint(context);
@@ -103,6 +110,8 @@ function issueToken({ uid, sessionId, context, previousRotation = 0, masterSecre
     const encrypted = encryptPayload(inner, aesKey, aad);
     const token = signEnvelope(encrypted, hmacKey);
 
+    try { promMetrics?.incToken('issued', 1); } catch (e) { }
+    try { promMetrics?.observeTokenMint((Date.now() - started) / 1000, 'issue'); } catch (e) { }
     return { token, inner, aad };
 }
 

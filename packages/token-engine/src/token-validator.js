@@ -106,6 +106,13 @@ function assertRiskClaims(inner, context) {
     return runtime;
 }
 
+let promMetrics = null;
+try {
+    promMetrics = require('../../auth-server/src/prom-metrics');
+} catch (e) {
+    promMetrics = null;
+}
+
 /**
  * Try to decrypt an envelope with each key in the keyring.
  * Returns the first successful decryption result, or null.
@@ -146,6 +153,7 @@ async function decryptWithKeyring(encrypted, keyring) {
  * @returns {Promise<object>}         Validated inner payload + matchedEpoch
  */
 async function validateToken({ token, context, masterSecret, hmacKey, redis = null }) {
+    const _start = Date.now();
     if (!token || typeof token !== 'string') throw new Error('token missing');
     if (Buffer.byteLength(token, 'utf8') > MAX_TOKEN_BYTES) {
         throw new Error('token exceeds maximum size');
@@ -199,6 +207,11 @@ async function validateToken({ token, context, masterSecret, hmacKey, redis = nu
         throw new Error('context drift too high');
     }
 
+    try {
+        try { const dur = (Date.now() - _start) / 1000; promMetrics?.observeTokenValidation(dur, 'success'); } catch (e) { }
+        try { promMetrics?.incToken('validation_success', 1); } catch (e) { }
+    } catch (e) { }
+
     return {
         ...inner,
         matchedEpoch: decrypted.epoch,
@@ -208,8 +221,20 @@ async function validateToken({ token, context, masterSecret, hmacKey, redis = nu
     };
 }
 
+// Wrap validateToken to instrument failures as well
+const _validateToken = validateToken;
+async function validateTokenInstrumented(opts) {
+    try {
+        return await _validateToken(opts);
+    } catch (err) {
+        try { promMetrics?.observeTokenValidation(0, 'failure'); } catch (e) { }
+        try { promMetrics?.incToken('validation_failure', 1); } catch (e) { }
+        throw err;
+    }
+}
+
 module.exports = {
-    validateToken,
+    validateToken: validateTokenInstrumented,
     assertTemporalClaims,
     assertRiskClaims,
     decryptWithKeyring

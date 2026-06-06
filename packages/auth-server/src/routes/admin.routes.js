@@ -16,6 +16,9 @@ const {
     getExportJobByManifestHash,
     getSIEMContainmentSummary
 } = require('../../../../infra/db/audit.model');
+const { listSessions, getSession: getSessionModel, revokeSession: modelRevokeSession, countSessions } = require('../../../../infra/db/session.model');
+const { getTokenState } = require('../../../../infra/redis/token-store');
+const sessionManager = require('../session-manager');
 const {
     logAnomaly,
     getAnomalyStats,
@@ -131,7 +134,13 @@ function requireAdminAuth(req, res, next) {
 function adminRoutes() {
     const router = express.Router();
 
+    // Admin auth, basic rate limiting, and lightweight metrics
+    const rateLimit = require('../admin-rate-limit');
+    const metrics = require('../metrics');
+    const promMetrics = require('../prom-metrics');
+
     router.use(requireAdminAuth);
+    router.use(rateLimit);
 
     router.get('/policy/profile', (req, res) => {
         return res.json({
@@ -351,6 +360,112 @@ function adminRoutes() {
             count: items.length,
             items
         });
+    });
+
+    // Admin: bulk revoke all sessions for a user
+    router.post('/sessions/revoke', async (req, res) => {
+        const uid = String(req.query.uid || req.body?.uid || '').trim();
+        if (!uid) return res.status(400).json({ ok: false, error: 'missing_uid' });
+
+        const actor = String(req.headers['x-admin-actor'] || 'admin').slice(0, 128);
+        const ip = req.security?.clientIp || req.ip || 'unknown';
+
+        try {
+            const rows = await listSessions({ uid, limit: 10000, offset: 0, activeOnly: false });
+            let count = 0;
+            for (const r of rows) {
+                try {
+                    await modelRevokeSession(r.sessionId, new Date().toISOString());
+                    await sessionManager.revokeSession(r.sessionId, uid, null);
+                    count++;
+                } catch (e) {
+                    // continue revoking others
+                }
+            }
+
+            addAuditEvent({
+                type: 'admin_bulk_revoke_sessions',
+                severity: 'critical',
+                allow: true,
+                uid,
+                count,
+                actor,
+                ip,
+                at: new Date().toISOString(),
+                details: { reason: req.body?.reason || null }
+            });
+
+            try { metrics.incr('admin.bulk_revoke.count', count); } catch (e) { }
+            try { promMetrics.incAdmin('bulk_revoke', count); } catch (e) { }
+
+            return res.json({ ok: true, uid, count });
+        } catch (err) {
+            logAnomaly('admin_bulk_revoke_failed', { ip, uid, message: err.message });
+            return res.status(500).json({ ok: false, error: 'bulk_revoke_failed' });
+        }
+    });
+
+    // Admin: list sessions with pagination and filters
+    router.get('/sessions', async (req, res) => {
+        const limit = parseLimit(req.query.limit, { fallback: 50, max: 1000 });
+        const offset = Math.max(0, Number(req.query.offset || 0));
+        const uid = req.query.uid ? String(req.query.uid).trim() : null;
+        const activeOnly = parseBoolean(req.query.activeOnly) === true;
+
+        try {
+            const total = await countSessions({ uid, activeOnly });
+            const items = await listSessions({ uid, limit, offset, activeOnly });
+
+            addAuditEvent({
+                type: 'admin_list_sessions',
+                severity: 'info',
+                allow: true,
+                actor: String(req.headers['x-admin-actor'] || 'admin').slice(0, 128),
+                ip: req.security?.clientIp || req.ip || 'unknown',
+                at: new Date().toISOString(),
+                details: { uid, limit, offset, activeOnly }
+            });
+
+            try { metrics.incr('admin.list_sessions.count', items.length); } catch (e) { }
+            try { promMetrics.incAdmin('list_sessions', items.length); } catch (e) { }
+
+            return res.json({ ok: true, total, count: items.length, limit, offset, items });
+        } catch (err) {
+            logAnomaly('admin_list_sessions_failed', { message: err.message });
+            return res.status(500).json({ ok: false, error: 'list_failed' });
+        }
+    });
+
+    // Admin: get details for a specific session
+    router.get('/sessions/:sid', async (req, res) => {
+        const sid = String(req.params.sid || '').trim();
+        if (!sid) return res.status(400).json({ ok: false, error: 'missing_sid' });
+
+        try {
+            const row = await getSessionModel(sid);
+            if (!row) return res.status(404).json({ ok: false, error: 'session_not_found' });
+
+            const state = await getTokenState(sid, null);
+            const actor = String(req.headers['x-admin-actor'] || 'admin').slice(0, 128);
+            const ip = req.security?.clientIp || req.ip || 'unknown';
+
+            addAuditEvent({
+                type: 'admin_view_session',
+                severity: 'info',
+                allow: true,
+                sessionId: sid,
+                actor,
+                ip,
+                at: new Date().toISOString()
+            });
+
+            try { metrics.incr('admin.view_session.count'); } catch (e) { }
+            try { promMetrics.incAdmin('view_session', 1); } catch (e) { }
+
+            return res.json({ ok: true, session: row, state: state || null });
+        } catch (err) {
+            return res.status(500).json({ ok: false, error: 'session_lookup_failed' });
+        }
     });
 
     router.get('/audit/export/jobs/:batchId', async (req, res) => {
@@ -623,8 +738,11 @@ function adminRoutes() {
             return res.status(400).json({ ok: false, error: 'invalid_format', supported: ['json', 'ndjson'] });
         }
 
+        // fetch a larger window from the DB and apply export filters in-memory so
+        // pagination/limit applies to the filtered results rather than the raw DB page
+        const sourceLimit = 5000; // upper bound to allow filtering by type/outcome
         const events = await listAuditEventsAdvanced({
-            limit,
+            limit: sourceLimit,
             beforeId: cursor,
             afterId: sinceId,
             sort: 'desc'
