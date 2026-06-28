@@ -32,6 +32,12 @@ if (!prom) {
         labelNames: ['action']
     });
 
+    const authOutcomeCounter = new prom.Counter({
+        name: 'vault_auth_outcomes_total',
+        help: 'Authentication outcomes',
+        labelNames: ['outcome']
+    });
+
     const tokenCounter = new prom.Counter({
         name: 'vault_token_events_total',
         help: 'Token lifecycle events',
@@ -85,11 +91,41 @@ if (!prom) {
         help: 'Number of active sessions tracked in-process'
     });
 
+    const middlewareLatency = new prom.Histogram({
+        name: 'vault_middleware_latency_seconds',
+        help: 'Latency of critical middleware/components',
+        labelNames: ['component', 'outcome'],
+        buckets: [0.0005, 0.001, 0.005, 0.01, 0.02, 0.05, 0.1, 0.25, 0.5, 1, 2, 5]
+    });
+
     let redisLookupHits = 0;
     let redisLookupMisses = 0;
 
+    function normalizeRouteLabel(req) {
+        // Avoid high-cardinality labels: NEVER use req.path directly.
+        // Prefer Express route template (bounded set).
+        const routeTemplate = req?.route?.path;
+        if (typeof routeTemplate === 'string' && routeTemplate.length > 0) {
+            return routeTemplate;
+        }
+
+        // If route template is missing, use baseUrl + template/path if any.
+        const baseUrl = typeof req?.baseUrl === 'string' ? req.baseUrl : '';
+        const pathFromRoute = typeof req?.route?.path === 'string' ? req.route.path : '';
+        if (baseUrl && pathFromRoute) return `${baseUrl}${pathFromRoute}`;
+
+        // Fallback: keep it bounded-ish by only using the first path segment.
+        const originalUrl = typeof req?.originalUrl === 'string' ? req.originalUrl : '';
+        if (!originalUrl) return '/unknown';
+
+        const urlPath = originalUrl.split('?')[0] || '';
+        const seg = urlPath.split('/').filter(Boolean)[0];
+        return seg ? `/${seg}` : '/unknown';
+    }
+
     function middleware(req, res, next) {
-        const end = httpDuration.startTimer({ method: req.method, route: req.path });
+        const route = normalizeRouteLabel(req);
+        const end = httpDuration.startTimer({ method: req.method, route, status: '0' });
         res.on('finish', () => {
             end({ status: String(res.statusCode) });
         });
@@ -100,12 +136,29 @@ if (!prom) {
         adminCounter.inc({ action: String(action) }, Number(value || 1));
     }
 
+    function incAuthOutcome(outcome, value = 1) {
+        const safe = String(outcome || '').trim().toLowerCase();
+        // bounded label values
+        const allowed = new Set(['success', 'failure', 'replay_detected', 'pow_failed']);
+        const label = allowed.has(safe) ? safe : 'failure';
+        authOutcomeCounter.inc({ outcome: label }, Number(value || 1));
+    }
+
     function incToken(event, value = 1) {
         tokenCounter.inc({ event: String(event) }, Number(value || 1));
     }
 
     function observeTokenValidation(durationSeconds, outcome = 'success') {
         try { tokenValidationDuration.observe({ outcome: String(outcome) }, Number(durationSeconds)); } catch (e) { }
+    }
+
+    function observeMiddlewareLatency(component, outcome, durationSeconds) {
+        try {
+            middlewareLatency.observe({
+                component: String(component),
+                outcome: String(outcome)
+            }, Number(durationSeconds));
+        } catch (e) { }
     }
 
     function incSession(event, value = 1) {
@@ -142,6 +195,10 @@ if (!prom) {
         incAdmin,
         observeRequest: httpDuration.observe,
         register: prom.register,
+
+        // auth outcomes
+        incAuthOutcome,
+
         // token/session helpers
         incToken,
         observeTokenValidation,
@@ -149,6 +206,9 @@ if (!prom) {
         setActiveSessions,
         incReplay,
         recordRedisEvent,
-        observeTokenMint
+        observeTokenMint,
+
+        // middleware instrumentation
+        observeMiddlewareLatency
     };
 }

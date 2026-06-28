@@ -55,6 +55,8 @@ const {
     resumeSIEMContainment,
     resolveSIEMContainment
 } = require('../../../validation-service/src/siem-containment');
+const { getSession } = require('../../../../infra/db/session.model');
+const { revokeSession: revokeSessionFromManager } = require('../session-manager');
 
 function parseLimit(raw, { fallback = 100, min = 1, max = 1000 } = {}) {
     const value = Number(raw);
@@ -599,6 +601,55 @@ function adminRoutes() {
 
         const rows = await listContainmentStatuses({ limit, beforeId, afterId, status });
         return res.json({ ok: true, count: rows.length, items: rows });
+    });
+
+    // Administrative session controls
+    router.post('/sessions/:sid/revoke', async (req, res) => {
+        const sid = String(req.params.sid || '').trim();
+        if (!sid) return res.status(400).json({ ok: false, error: 'missing_session_id' });
+
+        const session = await getSession(sid);
+        const actor = String(req.headers['x-admin-actor'] || 'admin').slice(0, 128);
+        try {
+            await revokeSessionFromManager(sid, session ? session.uid : null, null);
+
+            // Audit/anomaly log
+            logAnomaly('admin_session_revoked', {
+                actor,
+                sid,
+                uid: session ? session.uid : null,
+                ip: req.security?.clientIp || req.ip || 'unknown'
+            });
+
+            return res.json({ ok: true, sessionId: sid, uid: session ? session.uid : null, existed: Boolean(session) });
+        } catch (err) {
+            logAnomaly('admin_session_revoke_failed', {
+                actor,
+                sid,
+                uid: session ? session.uid : null,
+                message: err.message
+            });
+            return res.status(500).json({ ok: false, error: 'revoke_failed' });
+        }
+    });
+
+    // GET /admin/sessions?uid=<userId> — list sessions for a user (or all if omitted)
+    router.get('/sessions', async (req, res) => {
+        const uid = req.query.uid ? String(req.query.uid) : null;
+        const limit = Number(req.query.limit || 100);
+        const offset = Number(req.query.offset || 0);
+        const activeOnly = typeof req.query.activeOnly !== 'undefined' ? String(req.query.activeOnly) === 'true' : false;
+        try {
+            const { listSessions, countSessions } = require('../../../../infra/db/session.model');
+            const limitVal = Math.max(1, Math.min(1000, limit));
+            const offsetVal = Math.max(0, offset);
+            const items = await listSessions({ uid, limit: limitVal, offset: offsetVal, activeOnly });
+            const total = await countSessions({ uid, activeOnly });
+            return res.json({ ok: true, total, count: items.length, limit: limitVal, offset: offsetVal, items });
+        } catch (err) {
+            logAnomaly('admin_session_list_failed', { message: err.message });
+            return res.status(500).json({ ok: false, error: 'list_failed' });
+        }
     });
 
     router.get('/audit/export/containments/summary', async (_req, res) => {

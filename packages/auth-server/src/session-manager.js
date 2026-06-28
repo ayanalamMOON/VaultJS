@@ -41,11 +41,24 @@ async function enforceSessionCeiling(uid) {
             oldestId = sid;
         }
     }
+
+    // If DB session payloads are missing (common in unit tests), fall back to a deterministic eviction.
+    if (!oldestId) {
+        const first = set.values().next();
+        oldestId = first?.value || null;
+    }
+
     if (oldestId) {
-        // Prefer revoking to ensure durable state
+        // Prefer hard-delete so listSessions({uid}) reflects the ceiling.
+        // Also best-effort mark revoked for audit/durability.
         try {
             await dbRevokeSession(oldestId, new Date().toISOString());
         } catch (e) { }
+
+        try {
+            await deleteSession(oldestId);
+        } catch (e) { }
+
         set.delete(oldestId);
         try { promMetrics.incSession('evicted', 1); } catch (e) { }
         logAnomaly('session_ceiling_eviction', { uid, evictedSid: oldestId });

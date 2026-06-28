@@ -46,6 +46,7 @@ async function assertFreshRotation(sessionId, rotation, redis = null) {
     const replayed = await hasSeenRotation(sessionId, rotation, redis);
     if (replayed) {
         try { promMetrics?.incReplay('rotation', 1); } catch (e) { }
+        try { promMetrics?.incAuthOutcome?.('replay_detected', 1); } catch (e) { }
         throw new Error('replay detected: rotation');
     }
     await recordRotation(sessionId, rotation, redis);
@@ -70,6 +71,7 @@ async function assertFreshJti(sessionId, jti, redis = null, ttlMs = 10 * 60 * 10
         const result = await redis.set(redisKey, '1', 'EX', ttlSec, 'NX');
         if (result === null) {
             try { promMetrics?.incReplay('jti', 1); } catch (e) { }
+            try { promMetrics?.incAuthOutcome?.('replay_detected', 1); } catch (e) { }
             throw new Error('replay detected: jti');
         }
         return;
@@ -80,6 +82,7 @@ async function assertFreshJti(sessionId, jti, redis = null, ttlMs = 10 * 60 * 10
     const existing = jtiCache.get(key);
     if (existing && existing > Date.now()) {
         try { promMetrics?.incReplay('jti', 1); } catch (e) { }
+        try { promMetrics?.incAuthOutcome?.('replay_detected', 1); } catch (e) { }
         throw new Error('replay detected: jti');
     }
     jtiCache.set(key, Date.now() + ttlMs);

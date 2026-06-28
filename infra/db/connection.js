@@ -87,6 +87,26 @@ async function initSchema(database) {
         )
       `);
 
+            // Add uid and revokedAt columns for efficient queries/pagination. Use
+            // ALTER TABLE guarded by duplicate-column checks to be safe on
+            // existing DBs.
+            database.run('ALTER TABLE sessions ADD COLUMN uid TEXT', (addUidErr) => {
+                if (addUidErr && !/duplicate column name/i.test(addUidErr.message)) {
+                    // propagate as fatal
+                    return reject(addUidErr);
+                }
+
+                database.run('ALTER TABLE sessions ADD COLUMN revokedAt INTEGER', (addRevokedErr) => {
+                    if (addRevokedErr && !/duplicate column name/i.test(addRevokedErr.message)) {
+                        return reject(addRevokedErr);
+                    }
+
+                    // Create indexes to make filtering/counting fast on large tables.
+                    database.run('CREATE INDEX IF NOT EXISTS idx_sessions_uid ON sessions(uid)');
+                    database.run('CREATE INDEX IF NOT EXISTS idx_sessions_revokedAt ON sessions(revokedAt)');
+                });
+            });
+
             database.run(`
         CREATE TABLE IF NOT EXISTS audits (
           id INTEGER PRIMARY KEY AUTOINCREMENT,

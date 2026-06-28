@@ -2,6 +2,14 @@
 
 const { getAnomalyPressure } = require('../anomaly-detector');
 
+let promMetrics = null;
+try {
+    // eslint-disable-next-line global-require
+    promMetrics = require('../prom-metrics');
+} catch (e) {
+    promMetrics = null;
+}
+
 // Per-IP token buckets stored in process memory.
 // For multi-instance deployments wire in the Redis leaky-bucket implementation below.
 const buckets = new Map();
@@ -87,6 +95,8 @@ function rateLimiter({ limit = 30, windowMs = 60_000, keyPrefix = 'rl', redis = 
     const windowSec = Math.ceil(windowMs / 1000);
 
     return async (req, res, next) => {
+        const start = process.hrtime.bigint();
+
         // Use the real client IP enriched by the ipIntel middleware when available
         const ip = req.security?.clientIp || req.ip || '0.0.0.0';
         const routePart = includeRoute ? `:${req.method}:${req.baseUrl || req.path || '/'}` : '';
@@ -98,16 +108,34 @@ function rateLimiter({ limit = 30, windowMs = 60_000, keyPrefix = 'rl', redis = 
 
         try {
             if (redis) {
-                return await redisRateLimit(req, res, next, {
-                    ip: scopedIp,
-                    redis,
-                    keyPrefix,
-                    windowSec,
-                    windowMs,
-                    limit: effective.limit
-                });
+                try {
+                    const ok = await redisRateLimit(req, res, next, {
+                        ip: scopedIp,
+                        redis,
+                        keyPrefix,
+                        windowSec,
+                        windowMs,
+                        limit: effective.limit
+                    });
+
+                    if (ok !== false) {
+                        const elapsedSeconds = Number(process.hrtime.bigint() - start) / 1e9;
+                        try { promMetrics?.observeMiddlewareLatency('rate_limiter', 'allowed', elapsedSeconds); } catch (e) { }
+                    }
+                    return ok;
+                } catch (e) {
+                    const elapsedSeconds = Number(process.hrtime.bigint() - start) / 1e9;
+                    try { promMetrics?.observeMiddlewareLatency('rate_limiter', 'blocked', elapsedSeconds); } catch (e2) { }
+                    throw e;
+                }
             }
-            return memoryRateLimit(req, res, next, { ip: scopedIp, limit: effective.limit, windowMs });
+
+            const ok = await memoryRateLimit(req, res, next, { ip: scopedIp, limit: effective.limit, windowMs });
+            if (ok !== false) {
+                const elapsedSeconds = Number(process.hrtime.bigint() - start) / 1e9;
+                try { promMetrics?.observeMiddlewareLatency('rate_limiter', 'allowed', elapsedSeconds); } catch (e) { }
+            }
+            return ok;
         } catch {
             // On any limiter error, let the request through rather than DoSing ourselves
             return next();
@@ -125,6 +153,7 @@ async function redisRateLimit(req, res, next, { ip, redis, keyPrefix, windowSec,
     if (count > limit) {
         setRateHeaders(res, { limit, remaining: 0, resetSec });
         res.set('Retry-After', String(Math.ceil(resetSec)));
+        try { promMetrics?.incAuthOutcome('failure', 1); } catch (e) { }
         return res.status(429).json({ error: 'rate limit exceeded' });
     }
     setRateHeaders(res, { limit, remaining: limit - count, resetSec });
@@ -149,6 +178,7 @@ function memoryRateLimit(req, res, next, { ip, limit, windowMs }) {
 
     if (item.count > limit) {
         res.set('Retry-After', String(resetSec));
+        try { promMetrics?.incAuthOutcome('failure', 1); } catch (e) { }
         return res.status(429).json({ error: 'rate limit exceeded' });
     }
     return next();

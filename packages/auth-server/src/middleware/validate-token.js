@@ -3,6 +3,14 @@
 const { validateSession, refreshSession, revokeSession, COOKIE_NAME } = require('../session-manager');
 const { logAnomaly } = require('../anomaly-detector');
 
+let promMetrics = null;
+try {
+    // eslint-disable-next-line global-require
+    promMetrics = require('../prom-metrics');
+} catch (e) {
+    promMetrics = null;
+}
+
 /**
  * Build a request-context object from Express request headers + security metadata.
  * The context is used both for token validation and for binding new tokens.
@@ -78,16 +86,25 @@ function validateTokenMiddleware({ masterSecret, hmacKey, redis = null }) {
                 : null);
 
         if (!token) {
+            try { promMetrics?.incAuthOutcome('failure', 1); } catch (e) { }
             return res.status(401).json({ error: 'missing token' });
         }
 
         try {
             const context = buildContext(req);
+
+            const validationStart = process.hrtime.bigint();
             const validated = await validateSession({ token, context, masterSecret, hmacKey, redis });
+            const validationElapsedSeconds = Number(process.hrtime.bigint() - validationStart) / 1e9;
+
+            try { promMetrics?.observeMiddlewareLatency('token_validation', 'success', validationElapsedSeconds); } catch (e) { }
+            try { promMetrics?.incAuthOutcome('success', 1); } catch (e) { }
+
             req.auth = validated;
 
             // Silent refresh — rotates the token before it expires
             if (shouldRefreshToken(validated)) {
+                const refreshStart = process.hrtime.bigint();
                 try {
                     const refreshed = await refreshSession({
                         validatedPayload: validated,
@@ -97,8 +114,15 @@ function validateTokenMiddleware({ masterSecret, hmacKey, redis = null }) {
                         redis
                     });
                     setSessionCookie(res, refreshed.token);
+
+                    const refreshElapsedSeconds = Number(process.hrtime.bigint() - refreshStart) / 1e9;
+                    try { promMetrics?.observeMiddlewareLatency('token_refresh', 'success', refreshElapsedSeconds); } catch (e) { }
                 } catch (refreshErr) {
+                    const refreshElapsedSeconds = Number(process.hrtime.bigint() - refreshStart) / 1e9;
+
                     // A failed refresh is non-fatal: the current validated token is still good
+                    try { promMetrics?.observeMiddlewareLatency('token_refresh', 'failure', refreshElapsedSeconds); } catch (e) { }
+
                     logAnomaly('token_refresh_failure', {
                         ip: context.ip,
                         uid: validated.uid,
@@ -112,6 +136,8 @@ function validateTokenMiddleware({ masterSecret, hmacKey, redis = null }) {
             res.setHeader('x-vault-context-drift', String(validated.contextDrift ?? 0));
             return next();
         } catch (err) {
+            try { promMetrics?.incAuthOutcome('failure', 1); } catch (e) { }
+
             logAnomaly('token_validation_failure', {
                 message: err.message,
                 ip: req.security?.clientIp || req.ip || 'unknown'

@@ -9,6 +9,14 @@ const { issueChallenge, verifyChallenge } = require('../pow-challenge');
 const { buildContext } = require('../middleware/validate-token');
 const { logAnomaly } = require('../anomaly-detector');
 
+let promMetrics = null;
+try {
+    // eslint-disable-next-line global-require
+    promMetrics = require('../prom-metrics');
+} catch (e) {
+    promMetrics = null;
+}
+
 // Number of failed attempts before PoW is required
 const POW_THRESHOLD = 3;
 // Lock out repeated failures beyond this count (PoW must succeed every time)
@@ -125,6 +133,7 @@ function authRoutes({ masterSecret, hmacKey, redis = null }) {
         if (failCount >= POW_THRESHOLD) {
             const nonce = req.body.powNonce;
             if (!verifyChallenge(key, nonce)) {
+                try { promMetrics?.incAuthOutcome('pow_failed', 1); } catch (e) { }
                 const challenge = issueChallenge(key, failCount);
                 logAnomaly('login_pow_required', { ip, uid: req.body.username, count: failCount });
                 return res.status(403).json({ error: 'pow_required', challenge });
@@ -138,6 +147,7 @@ function authRoutes({ masterSecret, hmacKey, redis = null }) {
             });
 
             if (!user) {
+                try { promMetrics?.incAuthOutcome('failure', 1); } catch (e) { }
                 incFailCount(key);
                 logAnomaly('login_failed', { ip, uid: req.body.username, count: getFailCount(key) });
                 // Uniform minimum latency on failed auth to reduce timing signal leakage
@@ -150,6 +160,7 @@ function authRoutes({ masterSecret, hmacKey, redis = null }) {
             const context = buildContext(req);
             const issued = await createSession({ uid: user.id, context, masterSecret, hmacKey, redis });
             setSessionCookie(res, issued.token);
+            try { promMetrics?.incAuthOutcome('success', 1); } catch (e) { }
             return res.json({ ok: true, token: issued.token });
         } catch (err) {
             logAnomaly('login_error', { ip, message: err.message });
