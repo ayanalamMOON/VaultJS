@@ -83,6 +83,379 @@ function nextCursor(events = []) {
     return Number.isFinite(id) && id > 0 ? id : null;
 }
 
+function loadJobManifest(job) {
+    if (job?.manifest && typeof job.manifest === 'object') {
+        return job.manifest;
+    }
+
+    if (job?.manifestPath) {
+        try {
+            return loadSignedManifestFile(job.manifestPath);
+        } catch {
+            return null;
+        }
+    }
+
+    return null;
+}
+
+function buildExportIssues({ manifest, verification, chainValid }) {
+    const issues = new Set();
+
+    if (!manifest) {
+        issues.add('manifest_missing');
+    }
+    if (verification.hashValid === false) {
+        issues.add('manifest_hash_mismatch');
+    }
+    if (verification.signatureValid === false) {
+        issues.add('manifest_signature_invalid');
+    }
+    if (!chainValid) {
+        issues.add('manifest_chain_broken');
+    }
+
+    return [...issues];
+}
+
+async function evaluateExportJob(job, {
+    signingKey,
+    jobLookup = null,
+    includeContainment = false
+} = {}) {
+    const manifest = loadJobManifest(job);
+    const verification = verifySignedManifest(manifest, { signingKey });
+    const previousManifestHash = manifest?.replayProtection?.previousManifestHash || null;
+    const previousJob = previousManifestHash && typeof jobLookup === 'function'
+        ? await Promise.resolve(jobLookup(previousManifestHash))
+        : null;
+    const chainValid = !previousManifestHash || Boolean(previousJob);
+    const issues = buildExportIssues({ manifest, verification, chainValid });
+    const replayProtected = Boolean(verification.ok && chainValid);
+    const containment = includeContainment ? await getContainmentStatus(job.batchId) : null;
+
+    return {
+        job,
+        manifest,
+        verification,
+        previousManifestHash,
+        previousJob,
+        chainValid,
+        replayProtected,
+        issues,
+        containment
+    };
+}
+
+function resolveReplayChainAnchor(assessment, assessmentsByManifestHash) {
+    let current = assessment;
+    const visited = new Set();
+    let brokenAt = null;
+
+    while (current?.previousManifestHash) {
+        if (visited.has(current.job.manifestHash)) {
+            brokenAt = `cycle:${current.job.manifestHash}`;
+            break;
+        }
+
+        visited.add(current.job.manifestHash);
+
+        const previous = assessmentsByManifestHash.get(current.previousManifestHash);
+        if (!previous) {
+            brokenAt = current.previousManifestHash;
+            break;
+        }
+
+        current = previous;
+    }
+
+    return {
+        chainKey: brokenAt ? `broken:${brokenAt}` : `root:${current.job.manifestHash}`,
+        root: current,
+        brokenAt
+    };
+}
+
+function summarizeReplayChains(assessments) {
+    const assessmentsByManifestHash = new Map();
+    for (const assessment of assessments) {
+        assessmentsByManifestHash.set(assessment.job.manifestHash, assessment);
+    }
+
+    const groups = new Map();
+
+    for (const assessment of assessments) {
+        const anchor = resolveReplayChainAnchor(assessment, assessmentsByManifestHash);
+        const chainKey = anchor.chainKey;
+        const group = groups.get(chainKey) || {
+            chainKey,
+            rootBatchId: anchor.root.job.batchId,
+            rootManifestHash: anchor.root.job.manifestHash,
+            latestId: Number(anchor.root.job.id || 0),
+            latestBatchId: anchor.root.job.batchId,
+            latestManifestHash: anchor.root.job.manifestHash,
+            latestCreatedAt: anchor.root.job.createdAt,
+            batchCount: 0,
+            health: 'healthy',
+            issueCounts: {
+                manifest_missing: 0,
+                manifest_hash_mismatch: 0,
+                manifest_signature_invalid: 0,
+                manifest_chain_broken: 0
+            },
+            batches: []
+        };
+
+        group.batchCount += 1;
+        group.batches.push({
+            id: assessment.job.id,
+            batchId: assessment.job.batchId,
+            createdAt: assessment.job.createdAt,
+            manifestHash: assessment.job.manifestHash,
+            previousManifestHash: assessment.previousManifestHash,
+            status: assessment.replayProtected ? 'healthy' : 'degraded',
+            replayProtected: assessment.replayProtected,
+            chainValid: assessment.chainValid,
+            issues: assessment.issues
+        });
+
+        const currentCreatedAt = Date.parse(assessment.job.createdAt) || 0;
+        const latestCreatedAt = Date.parse(group.latestCreatedAt) || 0;
+        if (currentCreatedAt > latestCreatedAt || (
+            currentCreatedAt === latestCreatedAt
+            && Number(assessment.job.id || 0) > Number(group.latestId || 0)
+        )) {
+            group.latestId = Number(assessment.job.id || 0);
+            group.latestBatchId = assessment.job.batchId;
+            group.latestManifestHash = assessment.job.manifestHash;
+            group.latestCreatedAt = assessment.job.createdAt;
+        }
+
+        for (const issue of assessment.issues) {
+            if (Object.prototype.hasOwnProperty.call(group.issueCounts, issue)) {
+                group.issueCounts[issue] += 1;
+            }
+        }
+
+        if (assessment.issues.includes('manifest_chain_broken') || assessment.issues.includes('manifest_missing')) {
+            group.health = 'broken';
+        } else if (assessment.issues.length > 0 && group.health !== 'broken') {
+            group.health = 'degraded';
+        }
+
+        groups.set(chainKey, group);
+    }
+
+    return [...groups.values()]
+        .sort((a, b) => {
+            const left = Date.parse(b.latestCreatedAt) || 0;
+            const right = Date.parse(a.latestCreatedAt) || 0;
+            if (left !== right) return left - right;
+            return Number(b.latestId || 0) - Number(a.latestId || 0);
+        })
+        .map((group) => ({
+            ...group,
+            batches: group.batches.sort((a, b) => {
+                const left = Date.parse(a.createdAt) || 0;
+                const right = Date.parse(b.createdAt) || 0;
+                if (left !== right) return left - right;
+                return Number(a.id || 0) - Number(b.id || 0);
+            })
+        }));
+}
+
+function deriveIncidentSeverity(assessment) {
+    if (!assessment?.replayProtected) {
+        return 'critical';
+    }
+
+    if (assessment.issues?.includes('manifest_chain_broken') || assessment.issues?.includes('manifest_missing')) {
+        return 'critical';
+    }
+
+    if ((assessment.issues?.length || 0) > 0 || assessment.containment) {
+        return 'high';
+    }
+
+    return 'info';
+}
+
+function buildRootCauseHypothesis(assessment) {
+    if (assessment?.issues?.includes('manifest_hash_mismatch')) {
+        return 'Manifest checksum changed after export; inspect the manifest file and storage path for tampering or corruption.';
+    }
+
+    if (assessment?.issues?.includes('manifest_signature_invalid')) {
+        return 'Manifest signature verification failed; confirm the active signing key and any recent key rotation.';
+    }
+
+    if (assessment?.issues?.includes('manifest_chain_broken')) {
+        return 'Manifest lineage is broken; the previous manifest hash cannot be resolved to a known batch.';
+    }
+
+    if (assessment?.issues?.includes('manifest_missing')) {
+        return 'The manifest could not be loaded from disk or the database snapshot.';
+    }
+
+    if (assessment?.containment?.status) {
+        return `Containment is ${assessment.containment.status}; follow the operator workflow to acknowledge or resolve the batch.`;
+    }
+
+    return 'No active replay issue detected; continue routine monitoring.';
+}
+
+function buildSuggestedActions(job, assessment) {
+    const batchId = job.batchId;
+    const actions = [];
+
+    if (assessment?.containment?.status === 'paused') {
+        actions.push({
+            rank: 1,
+            action: 'acknowledge_containment',
+            description: 'Assign an owner and acknowledge the containment record.',
+            riskLevel: 'low',
+            request: {
+                method: 'POST',
+                path: `/admin/audit/export/jobs/${batchId}/containment/acknowledge`,
+                body: { note: 'acknowledged from quick-response payload' }
+            }
+        });
+        actions.push({
+            rank: 2,
+            action: 'resolve_containment',
+            description: 'Resolve the paused containment once the batch has been reviewed.',
+            riskLevel: 'medium',
+            request: {
+                method: 'POST',
+                path: `/admin/audit/export/jobs/${batchId}/containment/resolve`,
+                body: { note: 'resolve after review' }
+            }
+        });
+    }
+
+    if (assessment?.issues?.includes('manifest_hash_mismatch') || assessment?.issues?.includes('manifest_signature_invalid')) {
+        actions.push({
+            rank: actions.length + 1,
+            action: 'review_manifest',
+            description: 'Inspect the manifest file and signing key history for drift or tampering.',
+            riskLevel: 'low',
+            request: {
+                method: 'GET',
+                path: `/admin/audit/export/jobs/${batchId}/manifest`,
+                body: null
+            }
+        });
+    }
+
+    if (assessment?.issues?.includes('manifest_chain_broken')) {
+        actions.push({
+            rank: actions.length + 1,
+            action: 'inspect_lineage',
+            description: 'Use the replay-chain summary to identify the missing predecessor batch.',
+            riskLevel: 'low',
+            request: {
+                method: 'GET',
+                path: `/admin/audit/export/replay-chains?limit=10`,
+                body: null
+            }
+        });
+    }
+
+    if (actions.length === 0) {
+        actions.push({
+            rank: 1,
+            action: 'monitor',
+            description: 'No active remediation is required; continue monitoring the batch health.',
+            riskLevel: 'none',
+            request: {
+                method: 'GET',
+                path: `/admin/audit/export/jobs/${batchId}/health`,
+                body: null
+            }
+        });
+    }
+
+    return actions;
+}
+
+function buildQuickResponsePayload(job, assessment) {
+    const severity = deriveIncidentSeverity(assessment);
+    const incidentId = `inc-${job.batchId}`;
+    const payload = {
+        incidentId,
+        severity,
+        timestamp: new Date().toISOString(),
+        batchSummary: {
+            batchId: job.batchId,
+            manifestHash: job.manifestHash,
+            chainSha256: job.chainSha256,
+            recordCount: job.recordCount,
+            policyProfile: job.policyProfile,
+            manifestPath: job.manifestPath,
+            evidencePath: assessment.containment?.evidencePath || null,
+            containmentStatus: assessment.containment?.status || null
+        },
+        verification: {
+            hashValid: assessment.verification.hashValid,
+            signatureValid: assessment.verification.signatureValid,
+            chainValid: assessment.chainValid,
+            replayProtected: assessment.replayProtected,
+            issues: assessment.issues
+        },
+        rootCauseHypothesis: buildRootCauseHypothesis(assessment),
+        suggestedActions: buildSuggestedActions(job, assessment)
+    };
+
+    payload.markdownSummary = renderIncidentMarkdown(payload);
+    payload.plainTextSummary = renderIncidentPlainText(payload);
+    payload.acknowledgmentRequest = {
+        method: 'POST',
+        path: `/admin/audit/export/jobs/${job.batchId}/containment/acknowledge`,
+        body: { note: `acknowledged from ${incidentId}` }
+    };
+
+    return payload;
+}
+
+function renderIncidentMarkdown(payload) {
+    const lines = [
+        `# Incident ${payload.incidentId}`,
+        `**Severity:** ${String(payload.severity).toUpperCase()}`,
+        `**Batch:** ${payload.batchSummary.batchId}`,
+        `**Manifest Hash:** ${payload.batchSummary.manifestHash}`,
+        `**Chain SHA-256:** ${payload.batchSummary.chainSha256}`,
+        '',
+        `**Replay Protected:** ${payload.verification.replayProtected ? 'yes' : 'no'}`,
+        `**Root Cause:** ${payload.rootCauseHypothesis}`,
+        '',
+        '## Suggested Actions'
+    ];
+
+    for (const action of payload.suggestedActions) {
+        lines.push(`- [${action.rank}] **${action.action}** — ${action.description}`);
+    }
+
+    return lines.join('\n');
+}
+
+function renderIncidentPlainText(payload) {
+    const lines = [
+        `INCIDENT ${payload.incidentId}`,
+        `Severity: ${String(payload.severity).toUpperCase()}`,
+        `Batch: ${payload.batchSummary.batchId}`,
+        `Manifest Hash: ${payload.batchSummary.manifestHash}`,
+        `Chain SHA-256: ${payload.batchSummary.chainSha256}`,
+        `Replay Protected: ${payload.verification.replayProtected ? 'yes' : 'no'}`,
+        `Root Cause: ${payload.rootCauseHypothesis}`
+    ];
+
+    for (const action of payload.suggestedActions) {
+        lines.push(`Action ${action.rank}: ${action.action} - ${action.description}`);
+    }
+
+    return lines.join('\n');
+}
+
 function manifestDirectory() {
     return String(process.env.SIEM_MANIFEST_DIR || '').trim()
         || path.join(process.cwd(), 'infra', 'db', 'export-manifests');
@@ -769,6 +1142,148 @@ function adminRoutes() {
                 chainValid,
                 replayProtected: verificationOk
             }
+        });
+    });
+
+    router.get('/audit/export/jobs/:batchId/health', async (req, res) => {
+        const job = await getExportJobSnapshot(req.params.batchId, { includeSnapshot: false });
+        if (!job) {
+            return res.status(404).json({ ok: false, error: 'export_job_not_found' });
+        }
+
+        const signingKey = process.env.SIEM_MANIFEST_SIGNING_KEY || process.env.SIEM_EXPORT_SIGNING_KEY || '';
+        const assessment = await evaluateExportJob(job, {
+            signingKey,
+            jobLookup: (manifestHash) => getExportJobByManifestHash(manifestHash, { includeSnapshot: false }),
+            includeContainment: true
+        });
+
+        return res.json({
+            ok: true,
+            batchId: job.batchId,
+            status: assessment.replayProtected ? 'healthy' : 'degraded',
+            replayProtected: assessment.replayProtected,
+            chainValid: assessment.chainValid,
+            issues: assessment.issues,
+            job: {
+                id: job.id,
+                createdAt: job.createdAt,
+                format: job.format,
+                policyProfile: job.policyProfile,
+                recordCount: job.recordCount,
+                manifestHash: job.manifestHash,
+                previousManifestHash: assessment.previousManifestHash,
+                manifestPath: job.manifestPath
+            },
+            verification: {
+                ...assessment.verification,
+                chainValid: assessment.chainValid,
+                replayProtected: assessment.replayProtected
+            },
+            lineage: {
+                previousBatchId: assessment.previousJob?.batchId || null,
+                previousManifestHash: assessment.previousManifestHash,
+                currentManifestHash: job.manifestHash
+            },
+            containment: assessment.containment
+                ? {
+                    batchId: assessment.containment.batchId,
+                    status: assessment.containment.status,
+                    owner: assessment.containment.owner,
+                    severity: assessment.containment.severity,
+                    reason: assessment.containment.reason,
+                    lastStatusAt: assessment.containment.lastStatusAt
+                }
+                : null
+        });
+    });
+
+    router.get('/audit/export/jobs/:batchId/quick-response', async (req, res) => {
+        const job = await getExportJobSnapshot(req.params.batchId, { includeSnapshot: false });
+        if (!job) {
+            return res.status(404).json({ ok: false, error: 'export_job_not_found' });
+        }
+
+        const format = String(req.query.format || 'json').trim().toLowerCase();
+        if (!['json', 'markdown', 'text'].includes(format)) {
+            return res.status(400).json({
+                ok: false,
+                error: 'invalid_format',
+                supported: ['json', 'markdown', 'text']
+            });
+        }
+
+        const signingKey = process.env.SIEM_MANIFEST_SIGNING_KEY || process.env.SIEM_EXPORT_SIGNING_KEY || '';
+        const assessment = await evaluateExportJob(job, {
+            signingKey,
+            jobLookup: (manifestHash) => getExportJobByManifestHash(manifestHash, { includeSnapshot: false }),
+            includeContainment: true
+        });
+
+        const payload = buildQuickResponsePayload(job, assessment);
+
+        addAuditEvent({
+            type: 'siem_export_quick_response_generated',
+            severity: assessment.replayProtected ? 'info' : 'warn',
+            allow: true,
+            batchId: job.batchId,
+            manifestHash: job.manifestHash,
+            at: payload.timestamp,
+            details: {
+                format,
+                incidentId: payload.incidentId
+            }
+        });
+
+        if (format === 'markdown') {
+            res.setHeader('content-type', 'text/markdown; charset=utf-8');
+            res.setHeader('x-vault-incident-id', payload.incidentId);
+            return res.send(payload.markdownSummary);
+        }
+
+        if (format === 'text') {
+            res.setHeader('content-type', 'text/plain; charset=utf-8');
+            res.setHeader('x-vault-incident-id', payload.incidentId);
+            return res.send(payload.plainTextSummary);
+        }
+
+        return res.json({
+            ok: true,
+            ...payload
+        });
+    });
+
+    router.get('/audit/export/replay-chains', async (req, res) => {
+        const limit = parseLimit(req.query.limit, { fallback: 50, max: 100 });
+        const signingKey = process.env.SIEM_MANIFEST_SIGNING_KEY || process.env.SIEM_EXPORT_SIGNING_KEY || '';
+        const jobs = await listExportJobSnapshots({ limit: 1000, includeSnapshot: false });
+        const jobMap = new Map(jobs.map((job) => [job.manifestHash, job]));
+        const assessments = [];
+
+        for (const job of jobs) {
+            assessments.push(await evaluateExportJob(job, {
+                signingKey,
+                jobLookup: (manifestHash) => jobMap.get(manifestHash) || null,
+                includeContainment: false
+            }));
+        }
+
+        const chains = summarizeReplayChains(assessments);
+        const visibleChains = chains.slice(0, limit);
+        const totals = chains.reduce((acc, chain) => {
+            acc.batches += chain.batchCount;
+            acc.chains += 1;
+            if (chain.health === 'healthy') acc.healthyChains += 1;
+            if (chain.health === 'degraded') acc.degradedChains += 1;
+            if (chain.health === 'broken') acc.brokenChains += 1;
+            return acc;
+        }, { chains: 0, batches: 0, healthyChains: 0, degradedChains: 0, brokenChains: 0 });
+
+        return res.json({
+            ok: true,
+            count: visibleChains.length,
+            totals,
+            chains: visibleChains
         });
     });
 

@@ -61,6 +61,10 @@ VaultJS currently includes:
 - manifest lineage summaries
 - failure reason distribution reporting
 
+### Current implementation note
+
+The admin API now exposes the health and replay-chain endpoints above so operators can inspect export lineage without manual database queries.
+
 ### Success criteria
 
 - Operators can see whether a batch failed due to hash mismatch, signature mismatch, or chain break.
@@ -103,6 +107,10 @@ VaultJS currently includes:
 - batch owner assignment and severity updates
 - email/webhook notifications for verification failures
 - automated incident summaries with manifest and chain metadata
+
+### Current implementation note
+
+The admin API now exposes a quick-response incident payload endpoint for export batches, with JSON, markdown, and plaintext formats.
 
 ### Success criteria
 

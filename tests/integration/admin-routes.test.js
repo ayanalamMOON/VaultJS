@@ -283,6 +283,180 @@ describe('admin routes', () => {
         expect(verify.body.replayProtected).toBe(true);
     });
 
+    test('reports replay-chain health and lineage summaries', async () => {
+        const exportType = `replay_chain_test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+        await runAsync(
+            'INSERT INTO audits (event_data) VALUES (?)',
+            [JSON.stringify({
+                id: crypto.randomUUID(),
+                type: exportType,
+                severity: 'critical',
+                reason: 'replay_chain_test',
+                uid: 'replay-chain-user',
+                at: new Date().toISOString()
+            })]
+        );
+
+        const firstExport = await request(app)
+            .get(`/admin/audit/export?format=json&limit=5&type=${encodeURIComponent(exportType)}`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        const secondExport = await request(app)
+            .get(`/admin/audit/export?format=json&limit=5&type=${encodeURIComponent(exportType)}`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        const firstBatchId = firstExport.body.batchId;
+        const secondBatchId = secondExport.body.batchId;
+
+        const healthy = await request(app)
+            .get(`/admin/audit/export/jobs/${encodeURIComponent(secondBatchId)}/health`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        expect(healthy.body.ok).toBe(true);
+        expect(healthy.body.status).toBe('healthy');
+        expect(healthy.body.replayProtected).toBe(true);
+        expect(healthy.body.chainValid).toBe(true);
+        expect(healthy.body.lineage.previousBatchId).toBe(firstBatchId);
+
+        const chains = await request(app)
+            .get('/admin/audit/export/replay-chains?limit=10')
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        expect(chains.body.ok).toBe(true);
+        expect(Array.isArray(chains.body.chains)).toBe(true);
+
+        const chain = chains.body.chains.find((item) => item.batches.some((batch) => batch.batchId === secondBatchId));
+        expect(chain).toBeDefined();
+        expect(chain.batches.some((batch) => batch.batchId === firstBatchId)).toBe(true);
+
+        const manifestResponse = await request(app)
+            .get(`/admin/audit/export/jobs/${encodeURIComponent(secondBatchId)}/manifest`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        const corruptedManifest = {
+            ...manifestResponse.body.manifest,
+            export: {
+                ...manifestResponse.body.manifest.export,
+                recordCount: manifestResponse.body.manifest.export.recordCount + 1
+            }
+        };
+
+        await runAsync(
+            'UPDATE export_jobs SET manifestJson = ? WHERE batchId = ?',
+            [JSON.stringify(corruptedManifest), secondBatchId]
+        );
+
+        const degraded = await request(app)
+            .get(`/admin/audit/export/jobs/${encodeURIComponent(secondBatchId)}/health`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        expect(degraded.body.status).toBe('degraded');
+        expect(degraded.body.replayProtected).toBe(false);
+        expect(degraded.body.issues).toEqual(expect.arrayContaining([
+            'manifest_hash_mismatch',
+            'manifest_signature_invalid'
+        ]));
+
+        const degradedChains = await request(app)
+            .get('/admin/audit/export/replay-chains?limit=10')
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+        const degradedChain = degradedChains.body.chains.find((item) => item.batches.some((batch) => batch.batchId === secondBatchId));
+        expect(degradedChain).toBeDefined();
+        expect(degradedChain.issueCounts.manifest_hash_mismatch).toBeGreaterThanOrEqual(1);
+    });
+
+    test('produces quick-response incident payloads in json markdown and text', async () => {
+        const exportType = `quick_response_test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+        await runAsync(
+            'INSERT INTO audits (event_data) VALUES (?)',
+            [JSON.stringify({
+                id: crypto.randomUUID(),
+                type: exportType,
+                severity: 'critical',
+                reason: 'quick_response_test',
+                uid: 'quick-response-user',
+                at: new Date().toISOString()
+            })]
+        );
+
+        const exported = await request(app)
+            .get(`/admin/audit/export?format=json&limit=5&type=${encodeURIComponent(exportType)}`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        const batchId = exported.body.batchId;
+        const manifestResponse = await request(app)
+            .get(`/admin/audit/export/jobs/${encodeURIComponent(batchId)}/manifest`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        const corruptedManifest = {
+            ...manifestResponse.body.manifest,
+            export: {
+                ...manifestResponse.body.manifest.export,
+                recordCount: manifestResponse.body.manifest.export.recordCount + 1
+            }
+        };
+
+        await runAsync(
+            'UPDATE export_jobs SET manifestJson = ? WHERE batchId = ?',
+            [JSON.stringify(corruptedManifest), batchId]
+        );
+
+        await request(app)
+            .get(`/admin/audit/export/jobs/${encodeURIComponent(batchId)}/verify`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .set('x-admin-actor', 'quick-response-operator')
+            .expect(200);
+
+        const jsonPayload = await request(app)
+            .get(`/admin/audit/export/jobs/${encodeURIComponent(batchId)}/quick-response`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        expect(jsonPayload.body.ok).toBe(true);
+        expect(jsonPayload.body.incidentId).toBe(`inc-${batchId}`);
+        expect(jsonPayload.body.severity).toBe('critical');
+        expect(jsonPayload.body.verification.replayProtected).toBe(false);
+        expect(jsonPayload.body.verification.issues).toEqual(expect.arrayContaining([
+            'manifest_hash_mismatch',
+            'manifest_signature_invalid'
+        ]));
+        expect(Array.isArray(jsonPayload.body.suggestedActions)).toBe(true);
+        expect(jsonPayload.body.suggestedActions.length).toBeGreaterThan(0);
+        expect(jsonPayload.body.batchSummary.containmentStatus).toBe('paused');
+        expect(jsonPayload.body.markdownSummary).toContain(`# Incident ${jsonPayload.body.incidentId}`);
+        expect(jsonPayload.body.plainTextSummary).toContain(`INCIDENT ${jsonPayload.body.incidentId}`);
+        expect(jsonPayload.body.acknowledgmentRequest.path).toContain('/containment/acknowledge');
+
+        const markdownPayload = await request(app)
+            .get(`/admin/audit/export/jobs/${encodeURIComponent(batchId)}/quick-response?format=markdown`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        expect(markdownPayload.headers['content-type']).toContain('text/markdown');
+        expect(markdownPayload.headers['x-vault-incident-id']).toBe(`inc-${batchId}`);
+        expect(markdownPayload.text).toContain(`# Incident ${jsonPayload.body.incidentId}`);
+
+        const textPayload = await request(app)
+            .get(`/admin/audit/export/jobs/${encodeURIComponent(batchId)}/quick-response?format=text`)
+            .set('x-admin-token', ADMIN_TOKEN)
+            .expect(200);
+
+        expect(textPayload.headers['content-type']).toContain('text/plain');
+        expect(textPayload.headers['x-vault-incident-id']).toBe(`inc-${batchId}`);
+        expect(textPayload.text).toContain(`INCIDENT ${jsonPayload.body.incidentId}`);
+    });
+
     test('auto-pauses containment and preserves evidence when verification fails', async () => {
         const exportType = `containment_test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         await runAsync(
